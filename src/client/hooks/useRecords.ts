@@ -99,7 +99,7 @@ export function useRecords() {
       formData.append('password', password);
     }
     if (content && content.trim()) {
-      formData.append('content', content.trim());
+      formData.append('content', content);
     }
     if (title && title.trim()) {
       formData.append('title', title.trim());
@@ -171,7 +171,7 @@ export function useRecords() {
       formData.append('password', password);
     }
     if (content && content.trim()) {
-      formData.append('content', content.trim());
+      formData.append('content', content);
     }
     if (title && title.trim()) {
       formData.append('title', title.trim());

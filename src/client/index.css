@@ -56,6 +56,36 @@
 }
 
 /* Markdown 渲染美化样式 */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  scroll-margin-top: 1.25rem;
+  transition: background-color 0.3s ease, padding 0.3s ease;
+}
+
+.heading-target-highlight {
+  animation: headingHighlight 1.8s ease-out;
+}
+
+@keyframes headingHighlight {
+  0% {
+    background-color: rgba(59, 130, 246, 0.2);
+    border-radius: 0.5rem;
+    padding-left: 0.5rem;
+  }
+  60% {
+    background-color: rgba(59, 130, 246, 0.1);
+    padding-left: 0.5rem;
+  }
+  100% {
+    background-color: transparent;
+    padding-left: 0;
+  }
+}
+
 .markdown-content h1 {
   font-size: 1.5rem;
   font-weight: 700;
@@ -170,3 +200,55 @@
   border-radius: 0.5rem;
   margin: 0.75rem 0;
 }
+
+/* Mermaid 流程图与图表渲染容器样式与排版隔离 */
+.mermaid-diagram-placeholder {
+  min-height: 80px;
+}
+
+.mermaid-block-wrapper {
+  line-height: normal !important;
+}
+
+.mermaid-svg-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  line-height: normal !important;
+}
+
+.mermaid-svg-container svg {
+  max-width: 100% !important;
+  height: auto !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* 关键排版修复：彻底隔离外部 Markdown 的 leading-relaxed / line-height 继承污染，避免节点文字溢出边框 */
+.mermaid-svg-container foreignObject {
+  overflow: visible !important;
+}
+
+.mermaid-svg-container foreignObject div,
+.mermaid-svg-container foreignObject span,
+.mermaid-svg-container .nodeLabel,
+.mermaid-svg-container .label,
+.mermaid-svg-container .cluster-label {
+  line-height: 1.25 !important;
+  font-family: inherit !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  white-space: normal;
+  text-align: center;
+}
+
+.mermaid-svg-container foreignObject p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.mermaid-svg-container .edgeLabel {
+  line-height: 1.2 !important;
+}
+

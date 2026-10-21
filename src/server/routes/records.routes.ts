@@ -192,7 +192,7 @@ recordsRouter.post('/text', (req: Request, res: Response) => {
   }
 
   const preview = trimmed.length > 120 ? `${trimmed.substring(0, 120)}...` : trimmed;
-  const sizeBytes = Buffer.byteLength(trimmed, 'utf8');
+  const sizeBytes = Buffer.byteLength(content, 'utf8');
 
   const now = new Date().toISOString();
   const hasPwd = Boolean(password && typeof password === 'string' && password.trim());
@@ -203,7 +203,7 @@ recordsRouter.post('/text', (req: Request, res: Response) => {
     type: 'text',
     title,
     customTitle: cleanCustomTitle,
-    content: trimmed,
+    content, // 保持完整内容，默认不裁剪
     preview,
     isUrl,
     fileSize: sizeBytes,
@@ -248,7 +248,9 @@ recordsRouter.post(
     const hasPwd = Boolean(password && typeof password === 'string' && password.trim());
     const pwdHash = hasPwd ? hashPassword(password) : undefined;
     const senderNickname = auditService.getClientNickname(req);
-    const contentStr = req.body.content ? String(req.body.content).trim() : '';
+    const contentStr = req.body.content && typeof req.body.content === 'string' && req.body.content.trim()
+      ? String(req.body.content)
+      : '';
 
     // 1. 如果上传多个文件，或者携带正文说明（多文件合辑 / 图文附件条目），统一管理、呈现、查看与下载
     if (files.length > 1 || (files.length >= 1 && contentStr)) {
@@ -296,7 +298,7 @@ recordsRouter.post(
       const customTitle = req.body.title ? fixFileName(req.body.title).trim() : '';
       let defaultTitle = '';
       if (contentStr) {
-        const firstLine = contentStr.split('\n')[0].replace(/^[#\s*-_>]+/, '').trim();
+        const firstLine = contentStr.trim().split('\n')[0].replace(/^[#\s*-_>]+/, '').trim();
         const summary = firstLine.length > 25 ? `${firstLine.substring(0, 25)}...` : firstLine;
         defaultTitle = summary
           ? summary
@@ -321,7 +323,9 @@ recordsRouter.post(
         title,
         customTitle: customTitle || undefined,
         content: contentStr || undefined,
-        preview: contentStr ? (contentStr.length > 120 ? `${contentStr.substring(0, 120)}...` : contentStr) : undefined,
+        preview: contentStr
+          ? (contentStr.trim().length > 120 ? `${contentStr.trim().substring(0, 120)}...` : contentStr.trim())
+          : undefined,
         fileName: title,
         fileCount: subFiles.length,
         fileSize: totalBytes,
@@ -435,7 +439,9 @@ recordsRouter.post(
     const hasPwd = Boolean(password && typeof password === 'string' && password.trim());
     const pwdHash = hasPwd ? hashPassword(password) : undefined;
     const senderNickname = auditService.getClientNickname(req);
-    const contentStr = req.body.content ? String(req.body.content).trim() : '';
+    const contentStr = req.body.content && typeof req.body.content === 'string' && req.body.content.trim()
+      ? String(req.body.content)
+      : '';
 
     const folderName = req.body.folderName ? fixFileName(req.body.folderName) : '上传文件夹';
     let paths: string[] = [];
@@ -480,7 +486,9 @@ recordsRouter.post(
       title,
       customTitle: customTitle || undefined,
       content: contentStr || undefined,
-      preview: contentStr ? (contentStr.length > 120 ? `${contentStr.substring(0, 120)}...` : contentStr) : undefined,
+      preview: contentStr
+        ? (contentStr.trim().length > 120 ? `${contentStr.trim().substring(0, 120)}...` : contentStr.trim())
+        : undefined,
       fileName: folderName,
       fileSize: totalBytes,
       fileCount: files.length,

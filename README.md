@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>现代化、极简、高隐私的局域网跨设备文件与文本共享服务</strong><br>
-  无需公网中转 · 零第三方依赖 · 纯 TypeScript 全栈 · PWA 原生支持 · 毫秒级实时同步
+  无需公网中转 · 零外部数据库 · 纯 TypeScript 全栈 · PWA 原生支持 · 原生 Mermaid 图表渲染 · 毫秒级实时同步
 </p>
 
 <p align="center">
@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/Language-TypeScript_100%25-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Frontend-React_18_%2B_Vite_%2B_TailwindCSS-06b6d4?style=flat-square&logo=react&logoColor=white" alt="Frontend" />
   <img src="https://img.shields.io/badge/Backend-Node.js_%2B_Express_%2B_WS-339933?style=flat-square&logo=node.js&logoColor=white" alt="Backend" />
+  <img src="https://img.shields.io/badge/Markdown-GFM_%2B_Mermaid-ff69b4?style=flat-square&logo=markdown&logoColor=white" alt="Markdown & Mermaid" />
   <img src="https://img.shields.io/badge/PWA-Supported-orange?style=flat-square&logo=pwa&logoColor=white" alt="PWA Ready" />
   <img src="https://img.shields.io/badge/Docker-Ready-2496ed?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
@@ -30,6 +31,16 @@
 
 - [💡 项目亮点](#-项目亮点)
 - [🌟 核心功能特性](#-核心功能特性)
+  - [1. 📝 沉浸式 Markdown 阅读器与 Mermaid 图表引擎](#1--沉浸式-markdown-阅读器与-mermaid-图表引擎)
+  - [2. 📁 多文件、文件夹递归压缩与图文合辑](#2--多文件文件夹递归压缩与图文合辑)
+  - [3. 🔒 权限模式与安全解密体验](#3--权限模式与安全解密体验)
+  - [4. 🔗 独立提取页与免密直达链接](#4--独立提取页与免密直达链接)
+  - [5. ⚡ 毫秒级多端实时同步 (WebSocket)](#5--毫秒级多端实时同步-websocket)
+  - [6. 🧽 经典海绵宝宝身份系统](#6--经典海绵宝宝身份系统)
+  - [7. 💾 纯文件原子存储引擎 (No-DB)](#7--纯文件原子存储引擎-no-db)
+  - [8. 🛡️ 本机专属操作审计日志 (Audit Logs)](#8-️-本机专属操作审计日志-audit-logs)
+  - [9. 📱 PWA 原生跨平台体验](#9--pwa-原生跨平台体验)
+  - [10. 🌐 局域网 IP 变动自愈与稳定域名发现](#10--局域网-ip-变动自愈与稳定域名发现)
 - [🚀 快速开始](#-快速开始)
   - [方式一：Docker Compose（推荐）](#方式一docker-compose推荐)
   - [方式二：全平台智能运维部署脚本 (`deploy.sh` / `deploy.bat` / `deploy.ps1`)](#方式二全平台智能运维部署脚本-deploysh--deploybat--deployps1)
@@ -45,69 +56,85 @@
 ---
 
 ## 💡 项目亮点
-<img width="1171" height="866" alt="image" src="https://github.com/user-attachments/assets/bd41f9ad-9a83-4ecb-82ee-aea722e01a00" />
 
-在跨设备文件与文本互传场景中，现有工具往往存在诸多限制：
+<p align="center">
+  <img width="1171" height="866" alt="LightDrop Dashboard Preview" src="https://github.com/user-attachments/assets/bd41f9ad-9a83-4ecb-82ee-aea722e01a00" />
+</p>
 
-| 方案 | 痛点 | LightDrop 优势 |
+在跨设备文件与文本互传场景中，现有方案往往存在诸多痛点与限制：
+
+| 方案 | 常见痛点 | LightDrop 优势 |
 | :--- | :--- | :--- |
-| **微信 / QQ / IM** | 大文件限速、媒体严重压缩、隐私上传云端 | **跑满局域网千兆带宽**，零外网流量，数据 100% 留存本地 |
-| **Apple AirDrop** | 仅支持苹果生态内部互传 | **全平台免装客户端**，任意设备有浏览器即开即用 |
-| **网盘 / 云存储** | 需公网中转、下载限速、需注册登录 | **免注册免登录**，支持局域网扫码直连与 PWA 安装 |
-| **传统 Samba / FTP** | 配置繁琐、移动端体验差、无文本互传 | **开箱即用**，现代 Web 界面，支持富文本与 Markdown 渲染 |
+| **微信 / QQ / 钉钉** | 文件限速、图片视频严重压缩、敏感信息上传第三方公网云端 | **跑满局域网千兆/万兆带宽**，零外网流量消耗，数据 100% 物理留存本地 |
+| **Apple AirDrop** | 强绑定苹果生态，无法与 Windows、Linux、Android 设备互通 | **全平台免装客户端**，任意设备只要有现代浏览器即可秒级互传 |
+| **网盘 / 商业快传** | 强制注册登录、文件大小严苛受限、下载限速、需中间节点中转 | **零门槛即开即用**，局域网扫码秒连，支持 PWA 桌面/移动端安装 |
+| **传统 Samba / FTP** | 搭建配置繁琐、移动端界面体验差、完全不具备富文本与代码协同能力 | **开箱即用**，现代响应式 UI，原生支持 Markdown 与 Mermaid 矢量图表 |
 
 ---
 
 ## 🌟 核心功能特性
 
-### 1. 📝 文本互传与沉浸式 Markdown 阅读器
-- **快捷查看与沉浸式阅读**：
-  - 快速预览区与记录列表中均提供专属 **「查看」** 按钮，点击即可无缝调出全屏 Markdown 阅读器；
-  - 支持 **渲染预览 (Preview)** 与 **纯文本源码 (Raw)** 自由切换，完美兼容 GitHub Flavored Markdown (GFM)、表格与代码语法高亮；
-  - 顶部集成实时滚动阅读进度指示条，右下角提供平滑「回到顶部」悬浮按钮；
+### 1. 📝 沉浸式 Markdown 阅读器与 Mermaid 图表引擎
+- **全功能沉浸式阅读器**：
+  - 快速预览卡片与传输记录均提供一键 **「查看」**，呼出支持全屏平滑滚动的专用文档阅读器；
+  - **双视图自由切换**：支持在 **渲染预览 (Preview)** 与 **纯文本源码 (Raw)** 之间无缝切换；
+  - 完美兼容 **GitHub Flavored Markdown (GFM)**，包括复杂表格、任务列表、块引用与代码语法高亮。
+- **原生 Mermaid 流程图与图表渲染**：
+  - **丰富图表语法支持**：原生渲染 `flowchart` 流程图、`sequenceDiagram` 时序图、`classDiagram` 类图、`stateDiagram` 状态机、`erDiagram` 实体关系图、`gantt` 甘特图、`pie` 饼图、`gitGraph` 分支图、`mindmap` 思维导图等；
+  - **图表交互工具栏**：自动识别图表类型并标注徽标，支持图表与源码双视图独立切换；
+  - **一键复制代码 & 导出 SVG**：支持一键将图表源码复制到剪贴板，或直接导出高保真矢量 `.svg` 文件；
+  - **超大画布全屏大图预览**：点击放大按钮唤起居中全屏模态框，轻松平移与检视大型复杂架构图；
+  - **动态异步按需加载 (Code Splitting)**：未包含 Mermaid 的文档保持零额外网络负载，按需加载渲染模块；
+  - **强隔离排版引擎 (CSS Reset)**：严格重置并隔离外层 Markdown 行高与内边距，从根本上杜绝文字溢出边框、中英文乱折行或行距失真。
+- **智能多级目录 (TOC) 导航**：
+  - 自动从 Markdown 标题中提取章节层级目录，支持一键展开/折叠与快速定位；
+  - 点击目录项平滑滚动至对应章节，附带高亮淡出动效；
+  - 右侧悬浮“回到目录”与“回到顶部”快捷按钮，顶部提供实时阅读进度指示条；
   - 支持一键导出/下载为标准 `.md` 文件，内置文件名合法化校验与自定义重命名。
-- **智能标题与链接识别**：超长文本自动截取首行前 15 字符生成标题，URL 链接自动识别为可点击外链。
 
-### 2. 📁 多文件与文件夹递归打包上传
-- **批量拖拽极速互传**：支持多文件、图片拖拽上传，动态展示传输进度与元信息；
-- **文件夹自动打包**：直接选择整个本地文件夹，服务端自动流式压缩打包为 ZIP 文件，完整保留多级层级结构；
-- **图片缩略与原图预览**：图片自动生成高清缩略图，点击即可快速全屏预览。
+### 2. 📁 多文件、文件夹递归压缩与图文合辑
+- **批量拖拽极速互传**：支持多文件、海量图片一次性拖拽上传，动态展示精确传输进度、速度与分项元信息；
+- **文件夹自动打包**：直接选择整个本地文件夹，服务端采用流式压缩（Streaming Zip）自动归档打包，完整保留多级层级结构；
+- **图文合辑专属呈现**：支持在上传文件的同时附带说明文本或 Markdown 笔记，列表顶部优先渲染正文摘要与可折叠 Markdown，附件整洁汇聚；
+- **高清缩略图与大图预览**：图片自动生成高清缩略图，点击呼出轻量画廊查看原图；
+- **智能剪贴板集成**：支持在页面任意位置通过快捷键 `Ctrl+V` / `Cmd+V` 直接粘贴图片、文件或长文本，附带本地文件路径防呆检测。
 
 ### 3. 🔒 权限模式与安全解密体验
 - **简明清晰的两种权限类型**：
-  - **🌐 局域网**：免密公开，局域网内任意访客均可自由查看、复制与下载；
-  - **🔒 密码**：受 PIN 访问密码保护，服务端 SHA-256 哈希脱敏，未输入正确密码前内容绝不泄露。
-- **会话免密记忆**：当前页面成功输入密码解锁一次后，在当前会话内自动保持解密状态，再次查看或复制**无需重复输入密码**，锁图标自动转换为可用状态。
+  - **🌐 局域网公开**：免密公开，局域网内任意访客均可自由查看、复制正文与下载附件；
+  - **🔒 PIN 密码保护**：受访问密码保护，服务端采用 SHA-256 加盐哈希脱敏，未验证前正文与文件下载直链均不向客户端泄露。
+- **会话解密持久记忆**：成功解锁一条记录后，在当前浏览器会话周期内自动保持解锁状态，再次查看或复制**无需重复输入密码**，锁图标自动转换为可用状态。
 
 ### 4. 🔗 独立提取页与免密直达链接
 - **单记录专属提取页 (`/download/:id`)**：
-  - 每条记录提供专属路由与独立二维码，扫码或访问直达，无需暴露整个主站记录仪表盘；
-  - 针对文本内容呈现专属解锁阅读卡片，验证通过后无缝切入沉浸式阅读视图；
+  - 每条记录分配专属短链接与二维码，手机微信或浏览器扫码直达单个条目，无需暴露主站仪表盘所有历史记录；
+  - 针对文本记录提供优雅的卡片解锁过渡与阅读界面；
 - **免密直达链接**：
-  - 支持在分享链接中携带 `?pwd=xxx` 参数，接收方点击直接自动静默校验解锁，免除手动输入的繁琐；
-  - 提取信息弹窗支持一键复制「文本/文件分享文案」及「快捷免密直链」。
+  - 支持在分享链接中携带安全凭证参数（`?pwd=xxx`），接收方点击自动静默校验解锁；
+  - 分享弹窗支持一键复制“图文分享文案”与“快捷免密直链”。
 
 ### 5. ⚡ 毫秒级多端实时同步 (WebSocket)
-- 局域网内任意设备执行发送、修改、删除或清空操作，其余所有在线设备**无需手动刷新**，秒级全自动同步；
-- 底部状态栏实时呈现当前在线连接设备数与服务运行状态。
+- 局域网内任意设备执行发送、修改、重命名、删除或清空操作，其余所有在线设备**无需手动刷新**，毫秒级全自动同步视图；
+- 底部状态栏实时呈现当前局域网在线设备总数、延迟与服务健康状态。
 
 ### 6. 🧽 经典海绵宝宝身份系统
-- 内置 15 位经典海绵宝宝角色库（海绵宝宝 🧽、派大星 ⭐️、章鱼哥 🐙 等），初次访问自动分发角色与专属 Emoji；
-- 浏览器 `localStorage` 本地持久化，免去注册登录门槛，同时为发送记录、操作审计提供清晰直观的身份标识；
-- 顶部导航支持随时自定义改名或一键随机换角色。
+- 内置 15 位经典海绵宝宝角色库（海绵宝宝 🧽、派大星 ⭐️、章鱼哥 🐙、蟹老板 🦀 等），初次访问自动分发角色与专属 Emoji；
+- 基于 `localStorage` 浏览器持久化，免去传统账号密码注册的繁琐，同时为发送记录、操作审计提供清晰直观的身份标识；
+- 顶部导航支持随时自定义昵称或一键随机换角色。
 
 ### 7. 💾 纯文件原子存储引擎 (No-DB)
-- **零外部数据库依赖**：采用 `records.json` 索引 + 物理文件目录隔离，通过文件系统原子重命名（Atomic Write）保障高并发写入与意外断电数据零损坏；
-- **Web 端平滑热迁移**：系统设置中支持随时更改数据存储目录（如挂载的 NAS 路径），支持**一键热迁移**历史数据，服务重启自动读取引导配置；
-- **自动清理策略**：支持配置 1天 / 3天 / 7天 / 30天 或永不清理过期记录。
+- **零外部数据库依赖**：无需安装 MySQL、PostgreSQL 或 Redis，采用 `records.json` 索引 + 物理文件目录隔离；
+- **文件系统原子写入 (Atomic Write)**：通过临时文件与底层重命名（`fs.renameSync`）机制保障并发写入安全，防止意外断电导致数据损坏；
+- **Web 端平滑热迁移**：系统设置中支持随时更改物理存储目录（如挂载的 NAS 或外部移动硬盘路径），支持**一键热迁移**历史数据，服务重启自动读取引导配置；
+- **自动清理策略**：支持配置 1 天 / 3 天 / 7 天 / 30 天 或永不清理过期文件。
 
 ### 8. 🛡️ 本机专属操作审计日志 (Audit Logs)
-- 仅在运行服务的本机（Localhost）开放审计面板，局域网外部设备不可见，保障系统安全；
-- 全链路追踪局域网各客户端的上传、下载、复制、删除、查看密码及访问分享单页等操作轨迹。
+- 仅在部署服务的本机（`localhost` / `127.0.0.1`）或受信任的管理员 IP 开放审计面板，局域网普通访客完全不可见；
+- 全链路实时追踪局域网各客户端的上传、下载、复制、删除、查看密码及访问分享单页等操作轨迹。
 
 ### 9. 📱 PWA 原生跨平台体验
-- 完整支持 Web App Manifest 与 Service Worker；
-- 手机端支持“添加到主屏幕”，电脑端 Chrome/Edge 支持“安装应用”，拥有独立的窗口与原生 App 级操作体验。
+- 完整遵循 Web App Manifest 与 Service Worker 规范；
+- 手机端支持“添加到主屏幕”，电脑端 Chrome / Edge / Safari 支持“安装应用”，拥有独立的运行窗口与原生 App 级操作质感。
 
 ### 10. 🌐 局域网 IP 变动自愈与稳定域名发现
 - **Bonjour / mDNS 稳定本地域名**：系统自动生成 `http://<主机名>.local:8080` 稳定访问域名。宿主电脑无论切换到哪个 Wi-Fi，物理 IP 如何变动，手机添加到书签或主屏幕后**免重复扫码**，由底层 mDNS 协议秒级自动解析至最新物理 IP；
@@ -130,25 +157,22 @@ git clone https://github.com/zhatiai/LightDrop.git
 cd LightDrop
 ```
 
-2. 启动服务：
+2. 一键启动服务：
 
 ```bash
 docker compose up -d
 ```
 
-Docker Compose 将自动使用项目自带的 `Dockerfile` 构建镜像并启动服务，无需手动安装 Node.js 或 pnpm。
+Docker Compose 将自动基于内置 `Dockerfile` 编译并启动服务，无需在宿主机安装 Node.js 或 pnpm。
 
-打开浏览器访问 `http://<本机局域网IP>:8080` 即可开始使用。
+打开浏览器访问 `http://<本机局域网IP>:8080` 即可开始使用。数据与文件将持久化存储在 `./data` 中。
 
-上传文件和记录数据将持久化保存在项目目录下的 `./data` 中。
-
-更新代码后，可执行以下命令重新构建并启动服务：
+后续更新代码只需执行：
 
 ```bash
 git pull
 docker compose up -d --build
 ```
-
 
 ---
 
@@ -161,7 +185,7 @@ docker compose up -d --build
 # 交互式向导 (自动检测系统、适配模式与自启动选项)
 ./deploy.sh
 
-# 自动选择系统最优原生模式并开启开机自启
+# 自动选择系统最优原生模式并开启开机自启 (macOS 推荐)
 ./deploy.sh -m auto --autostart
 
 # macOS 原生 LaunchAgent 守护服务 (免 root、崩溃自动恢复、开机自启)
@@ -186,7 +210,6 @@ docker compose up -d --build
 .\deploy.ps1 -Mode startup -AutoStart $true
 ```
 
-
 ---
 
 ### 方式三：本地源码运行
@@ -194,16 +217,16 @@ docker compose up -d --build
 **环境要求**：Node.js >= 18.0.0，pnpm >= 8.0.0
 
 ```bash
-# 1. 安装依赖
+# 1. 安装全量依赖
 pnpm install
 
-# 2. 编译生产代码
+# 2. 编译生产代码 (客户端 Vite + 服务端 TypeScript)
 pnpm build
 
-# 3. 启动服务
+# 3. 启动生产服务
 pnpm start
 
-# 或使用开发热重载模式
+# 或进入开发热重载模式
 pnpm dev
 ```
 
@@ -211,16 +234,49 @@ pnpm dev
 
 ## 📐 架构设计与技术栈
 
-本项目采用 **TypeScript 全栈单仓规范**，前后端共享底层类型契约：
+本项目采用 **TypeScript 全栈单仓 (Monorepo) 规范**，前后端共享底层类型契约与协议定义：
+
+```mermaid
+flowchart TD
+    subgraph ClientLayer["客户端 (Client) - React 18 + Vite + TailwindCSS"]
+        UI["响应式 Web / PWA 界面"]
+        Reader["Markdown 阅读器 (GFM + Mermaid 引擎)"]
+        WSClient["WebSocket Client (实时状态同步)"]
+    end
+
+    subgraph ServerLayer["服务端 (Server) - Node.js + Express + WS"]
+        Router["Express REST API 路由 (/api/records, /download)"]
+        WSServer["WebSocket Hub (广播与连接池管理)"]
+        MDNS["Bonjour / mDNS + UDP 广播引擎"]
+    end
+
+    subgraph StorageLayer["持久化层 (Storage) - No-DB Atomic Storage"]
+        JSONIndex["records.json (原子重命名索引)"]
+        Config["lightdrop.config.json (免重启热更新配置)"]
+        FileDir["files/<recordId>/ (分片物理存储)"]
+        Audit["audit_logs.json (本地安全审计)"]
+    end
+
+    UI --> Router
+    Reader --> UI
+    WSClient <-->|全双工毫秒级同步| WSServer
+    Router --> JSONIndex
+    Router --> FileDir
+    Router --> Audit
+    Router --> Config
+    MDNS -.->|网络自愈感知| ClientLayer
+```
+
+### 目录结构组织
 
 ```text
 LightDrop/
 ├── src/
-│   ├── shared/                # 协议层：前后端共享 TypeScript 类型契约
-│   ├── server/                # 服务端：Node.js + Express + WebSocket + 原子文件引擎
-│   └── client/                # 客户端：React 18 + Vite + Tailwind CSS + PWA
-├── scripts/                   # 自动化运维脚本库 (deploy, package, uninstall)
-├── Dockerfile                 # 多阶段瘦身容器构建配置
+│   ├── shared/                # 协议层：前后端共享 TypeScript 类型定义与常量
+│   ├── server/                # 服务端：Express + WebSocket + 原子文件引擎 + mDNS 服务
+│   └── client/                # 客户端：React 18 + Vite + Tailwind CSS + Mermaid + PWA
+├── scripts/                   # 自动化运维脚本库 (deploy, package, uninstall, common)
+├── Dockerfile                 # 多阶段瘦身生产容器构建文件
 └── docker-compose.yml         # 生产容器编排文件
 ```
 
@@ -228,31 +284,30 @@ LightDrop/
 
 ## 📦 自动化运维体系
 
-| 脚本 | 适用平台 | 生命周期支持 | 常用命令 |
+| 脚本 | 适用平台 | 生命周期支持 | 常用指令示例 |
 | :--- | :--- | :--- | :--- |
 | `deploy.sh` / `deploy.bat` / `deploy.ps1` | macOS / Linux / Windows | **macOS**: `launchd` (LaunchAgent)<br>**Linux**: `systemd`<br>**Windows**: `task` / `startup`<br>**全平台**: `docker` / `pm2` / `standalone` | `./deploy.sh -m auto --autostart`<br>`.\deploy.ps1 -Mode task` |
 | `package.sh` | Linux / macOS / Git Bash | 多形态发行打包 (Docker TAR 离线镜像 / 原生免编独立发行包) | `./package.sh --all` |
 | `uninstall.sh` / `uninstall.bat` / `uninstall.ps1` | macOS / Linux / Windows | 精准停用服务、注销自启动项，支持数据保留或全量清除 | `./uninstall.sh --keep-data`<br>`.\uninstall.ps1 -DeleteData` |
-
 
 ---
 
 ## ⚙️ 配置与数据持久化
 
 ### 存储目录结构
-数据默认持久化在 `./data`（或用户自定义路径）：
+数据默认持久化在 `./data`（或部署工作目录下的 `data` 路径）：
 
 ```text
 data/
 ├── records.json               # 共享记录元数据 (内存索引加速 + 原子重命名覆写)
 ├── settings.json              # 系统运行首选项 (单文件限额、自动清理周期)
-├── audit.json                 # 局域网操作审计日志
+├── audit_logs.json            # 局域网操作审计日志
 └── files/<recordId>/          # 上传的物理文件存储目录
 ```
 
 ### 独立配置文件与免重启热更新 (`lightdrop.config.json`)
 
-系统提供独立的全局配置文件 `lightdrop.config.json`（位于部署工作目录，例如 macOS 原生服务为 `~/Library/Application Support/LightDrop/lightdrop.config.json`，源码运行则位于项目根目录）：
+系统提供独立的全局配置文件 `lightdrop.config.json`（位于部署工作目录，例如 macOS 原生服务为 `~/Library/Application Support/LightDrop/config/lightdrop.config.json`，源码运行则位于项目根目录）：
 
 ```json
 {
@@ -268,14 +323,14 @@ data/
 }
 ```
 
-- **免重启热更新 (Hot-Reloading)**：任何时候直接打开该 JSON 配置文件进行编辑并保存，服务端底层监听机制将**毫秒级自动热更新**并应用新策略，且通过 WebSocket 实时广播同步至所有已连接的设备界面，**完全无需重启服务**。
+- **免重启热更新 (Hot-Reloading)**：直接编辑该 JSON 配置文件并保存，服务端底层文件监听器将**毫秒级自动热更新**并应用新策略，且通过 WebSocket 实时广播同步至所有已连接的设备界面，**完全无需重启服务进程**。
 - **权限安全隔离 (Guest Read-Only / Admin)**：
-  - **服务器存储目录、单文件上传上限与自动清理策略**为服务端全局生效配置；
-  - 局域网内其他普通设备打开「设置」时，**所有服务器配置项均强制呈只读锁定状态**，界面呈现黄色访客标识，防止非管理员篡改；
+  - 存储目录、单文件上传上限与自动清理策略为服务端全局配置；
+  - 局域网内其他设备打开「设置」时，**所有服务器配置项均强制呈只读锁定状态**，界面呈现黄色访客标识，防止非管理员篡改；
   - 仅**部署服务器本机（回环地址及宿主机物理网卡）**或在 `adminIps` 列表中指定的管理员 IP 设备具备可写修改权限；
   - 部署脚本支持直接指定管理员 IP 列表：`./deploy.sh --admin-ips "192.168.1.100,10.0.0.*"`。
 
-### 手动重启或运维指令（若需物理重载进程）
+### 进程管理常用命令
 - **macOS (launchd)**:
   ```bash
   launchctl unload -w ~/Library/LaunchAgents/com.lightdrop.server.plist && launchctl load -w ~/Library/LaunchAgents/com.lightdrop.server.plist
@@ -292,26 +347,12 @@ data/
   ```bash
   docker restart lightdrop
   ```
-- **原生独立后台进程 (Standalone)**:
-  ```bash
-  kill -15 $(cat "<工作路径>/runinfo/lightdrop.pid")
-  ```
-
-### 环境变量
-可创建 `.env` 文件覆盖默认参数：
-
-| 变量名 | 默认值 | 说明 |
-| :--- | :--- | :--- |
-| `PORT` | `8080` | 服务监听端口 |
-| `LIGHTDROP_CONFIG_PATH` | `./lightdrop.config.json` | 独立配置文件绝对路径（支持免重启热更新） |
-| `STORAGE_DIR` | `./data` | 实际物理存储目录（支持绝对路径或挂载的 NAS 路径） |
-| `NODE_ENV` | `production` | 运行环境模式 (`production` / `development`) |
 
 ---
 
 ## 🛡️ 网络安全与企业局域网设计
 
-很多局域网工具在企业环境或大型 Wi-Fi 下容易引发 IT 审计关注或网络故障担忧。LightDrop 从底层协议规范严格遵循**低频、单向、零污染**原则设计，天然适配企业内网：
+很多局域网工具在企业环境或大型 Wi-Fi 下容易引发 IT 审计关注或网络广播风暴担忧。LightDrop 从底层协议规范严格遵循**低频、单向、零污染**原则设计，天然适配企业内网：
 
 ### 1. 绝对杜绝“广播风暴” (Zero Broadcast Storm)
 - **纯事件驱动（无定时轮询广播）**：服务端内部**没有任何定时轮询发包器**。仅在服务首次启动以及检测到网卡 IP 实际切换时触发**单次** UDP 信标，日常待机广播包发送量恒为 **0**；
@@ -341,6 +382,12 @@ data/
 </details>
 
 <details>
+<summary><strong>Q: Markdown 中包含复杂的 Mermaid 流程图或时序图能否正常展示？</strong></summary>
+
+完全支持。LightDrop 内置专业级 Mermaid 渲染引擎与样式强隔离重置方案，无论是流程图（Flowchart）、时序图（Sequence）、类图（Class）、状态图（State）还是甘特图（Gantt）均能精确矢量渲染。支持图表/源码双视图切换、一键复制代码、导出 SVG 矢量图以及超大画布全屏大图预览。
+</details>
+
+<details>
 <summary><strong>Q: 电脑切换 Wi-Fi 后，手机如何最快重新访问？</strong></summary>
 
 系统提供 3 种极速感知与自愈方案：
@@ -367,7 +414,7 @@ data/
 <details>
 <summary><strong>Q: 更改存储路径到 NAS 挂载目录后，重启会丢失吗？</strong></summary>
 
-不会。根目录下 `lightdrop.config.json` 会持久记录当前生效的物理路径，服务重启后自动从引导配置定位目标目录。
+不会。工作目录下的 `lightdrop.config.json` 会持久记录当前生效的物理路径，服务重启后自动从引导配置定位目标目录。
 </details>
 
 <details>

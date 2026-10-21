@@ -23,9 +23,10 @@ import {
   Copy,
   Paperclip,
 } from 'lucide-react';
-import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
 import { ShareItem, BatchFileItem } from '@shared/types';
+import { parseMarkdown } from '../utils/markdown';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import {
   formatBytes,
   formatDisplayTime,
@@ -95,18 +96,10 @@ export const BatchViewerModal: React.FC<BatchViewerModalProps> = ({
     return displayContent.length > 250 || (displayContent.match(/\n/g) || []).length > 5;
   }, [displayContent]);
 
-  // Markdown 渲染 HTML (支持 GFM 语法与自动换行)
+  // Markdown 渲染 HTML (支持 GFM 语法与 Mermaid 图表)
   const markdownHtml = useMemo(() => {
     if (!displayContent) return '';
-    try {
-      marked.setOptions({
-        gfm: true,
-        breaks: true,
-      });
-      return marked.parse(displayContent) as string;
-    } catch (err) {
-      return `<pre class="whitespace-pre-wrap font-mono text-xs">${displayContent}</pre>`;
-    }
+    return parseMarkdown(displayContent).html;
   }, [displayContent]);
 
   // 复制正文内容
@@ -538,11 +531,11 @@ export const BatchViewerModal: React.FC<BatchViewerModalProps> = ({
 
                     {/* Markdown 正文内容 */}
                     <div className="relative p-4 sm:p-5">
-                      <div
+                      <MarkdownRenderer
+                        html={markdownHtml}
                         className={`markdown-content max-w-none text-slate-800 leading-relaxed text-sm selection:bg-blue-100 transition-all ${
                           !isContentExpanded && isContentLong ? 'max-h-[160px] overflow-hidden' : ''
                         }`}
-                        dangerouslySetInnerHTML={{ __html: markdownHtml }}
                       />
 
                       {/* 截断渐变与展开/折叠按钮 */}

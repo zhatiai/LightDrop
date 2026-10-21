@@ -655,10 +655,17 @@ if [ "$DEPLOY_MODE" != "docker" ]; then
   fi
   cp -f "${CONFIG_FILE_PATH}" "${APP_DIR}/lightdrop.config.json"
 
-  # 拷贝 node_modules 保证独立可运行
-  if [ -d "${REPO_ROOT}/node_modules" ] && [ ! -d "${APP_DIR}/node_modules" ]; then
-    log_info "复制 node_modules 依赖库至部署目录..."
-    cp -R "${REPO_ROOT}/node_modules" "${APP_DIR}/" 2>/dev/null || true
+  # 拷贝/同步 node_modules 保证独立可运行
+  if [ -d "${REPO_ROOT}/node_modules" ]; then
+    if [ ! -d "${APP_DIR}/node_modules" ]; then
+      log_info "复制 node_modules 依赖库至部署目录..."
+      cp -R "${REPO_ROOT}/node_modules" "${APP_DIR}/" 2>/dev/null || true
+    else
+      log_info "增量同步 node_modules 依赖库至部署目录..."
+      if command -v rsync >/dev/null 2>&1; then
+        rsync -a "${REPO_ROOT}/node_modules/" "${APP_DIR}/node_modules/" 2>/dev/null || true
+      fi
+    fi
   fi
 fi
 

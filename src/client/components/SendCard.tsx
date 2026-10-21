@@ -99,6 +99,7 @@ export const SendCard: React.FC<SendCardProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 用于在组件卸载时及时回收所有创建的 Object URL，杜绝内存泄漏
   const pendingFilesRef = useRef<PendingUploadFile[]>([]);
@@ -275,7 +276,7 @@ export const SendCard: React.FC<SendCardProps> = ({
             : t('send.uploadingFilesCount', { count: totalPendingItemsCount })
         );
 
-        const textContent = hasText ? text.trim() : undefined;
+        const textContent = hasText ? text : undefined;
 
         if (pendingFolders.length > 0) {
           await onUploadMixedBatch(
@@ -315,9 +316,9 @@ export const SendCard: React.FC<SendCardProps> = ({
           setTitle('');
         }
       } else if (hasText || hasTitle) {
-        // 2. 纯文本发送 (若仅填写了标题未填正文，正文以标题填充)
+        // 2. 纯文本发送 (若仅填写了标题未填正文，正文以标题填充；默认保留原始完整文本不裁剪)
         setSubmittingStatus(t('send.processing'));
-        const textContent = text.trim() || title.trim();
+        const textContent = hasText ? text : title.trim();
         await onSendText(textContent, titleValue, currentPwd);
         setText('');
         setTitle('');
@@ -583,9 +584,15 @@ export const SendCard: React.FC<SendCardProps> = ({
     }
 
     // 4. 若为普通文字、代码或链接，允许浏览器默认将文字粘贴进 textarea
+    // 若当前触发事件的不是 textarea（例如聚焦在卡片外部或按钮上），则主动将文本追加至输入框
+    if (e.target !== textareaRef.current && pastedText) {
+      e.preventDefault();
+      setText((prev) => (prev ? `${prev}\n${pastedText}` : pastedText));
+      showToast('success', t('send.toastClipboardTextPasted'));
+    }
   };
 
-  // 主动点击【粘贴剪切板】按钮处理：图片加入待上传列表，文字填入输入框
+  // 主动点击【粘贴剪切板】按钮处理：图片加入待上传列表，文字填入输入框 (默认不裁剪，传输完整内容)
   const handlePasteFromClipboard = async () => {
     if (submitting) return;
 
@@ -626,20 +633,19 @@ export const SendCard: React.FC<SendCardProps> = ({
         }
       }
 
-      // 2. 读取剪贴板纯文本
+      // 2. 读取剪贴板纯文本 (默认不裁剪，保留原始完整内容)
       const textContent = await navigator.clipboard.readText();
-      const trimmedText = textContent ? textContent.trim() : '';
-      if (trimmedText) {
-        if (isLocalFileOrPathText(trimmedText)) {
-          showToast('error', t('send.errClipboardLocalFile', { name: trimmedText }));
+      if (textContent && textContent.trim()) {
+        if (isLocalFileOrPathText(textContent.trim())) {
+          showToast('error', t('send.errClipboardLocalFile', { name: textContent.trim() }));
           setTimeout(() => {
             fileInputRef.current?.click();
           }, 200);
           return;
         }
 
-        // 普通文本：填入输入框（已有内容则追加换行）
-        setText((prev) => (prev ? `${prev}\n${trimmedText}` : trimmedText));
+        // 普通文本：填入输入框（已有内容则追加换行），默认不裁剪，传输完整内容
+        setText((prev) => (prev ? `${prev}\n${textContent}` : textContent));
         showToast('success', t('send.toastClipboardTextPasted'));
         return;
       }
@@ -679,6 +685,15 @@ export const SendCard: React.FC<SendCardProps> = ({
           e.preventDefault();
           addFilesToPending(validFiles);
           showToast('success', t('send.toastAddedToPending', { count: validFiles.length }));
+          return;
+        }
+
+        // 全局粘贴文本（用户在页面任意位置按 Ctrl+V / Cmd+V，填入输入框，默认不裁剪）
+        const pastedText = e.clipboardData.getData('text/plain');
+        if (pastedText && !isLocalFileOrPathText(pastedText)) {
+          e.preventDefault();
+          setText((prev) => (prev ? `${prev}\n${pastedText}` : pastedText));
+          showToast('success', t('send.toastClipboardTextPasted'));
         }
       }
     };
@@ -855,9 +870,10 @@ export const SendCard: React.FC<SendCardProps> = ({
         />
       </div>
 
-      {/* 文本输入框 */}
+      {/* 文本输入框 (默认不裁剪，支持完整长文本传输) */}
       <div className="relative mb-3">
         <textarea
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -871,13 +887,14 @@ export const SendCard: React.FC<SendCardProps> = ({
           onPaste={handlePaste}
           placeholder={t('send.placeholder')}
           rows={4}
-          maxLength={10000}
           disabled={submitting}
           className="w-full text-xs sm:text-sm p-3.5 bg-slate-50/60 hover:bg-slate-50 focus:bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700 placeholder-slate-400 transition resize-none disabled:opacity-50"
         />
-        <div className="absolute right-3 bottom-3 text-[11px] font-mono text-slate-400 select-none">
-          {text.length} / 10000
-        </div>
+        {text.length > 0 && (
+          <div className="absolute right-3 bottom-3 text-[11px] font-mono text-slate-400 select-none pointer-events-none bg-white/80 backdrop-blur-xs px-1.5 py-0.5 rounded">
+            {t('send.charCount', { count: text.length.toLocaleString() })}
+          </div>
+        )}
       </div>
 
       {/* 待上传文件/图片列表 (复制或选择的文件在输入框下方清晰呈现，支持实时预览与移除) */}

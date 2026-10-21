@@ -12,12 +12,17 @@ import {
   ArrowLeft,
   Loader2,
   AlertCircle,
+  ListTree,
+  ChevronUp,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { marked } from 'marked';
 import { ShareItem } from '@shared/types';
 import { copyToClipboard } from '../utils/clipboard';
 import { formatDisplayTime } from '../utils/format';
+import { parseMarkdown, TocItem } from '../utils/markdown';
+import { MarkdownRenderer } from './MarkdownRenderer';
+
+export type { TocItem };
 
 interface TextReaderViewProps {
   item: ShareItem;
@@ -116,19 +121,76 @@ export const TextReaderView: React.FC<TextReaderViewProps> = ({
     };
   }, [showRenameDialog, onClose]);
 
-  // 配置与渲染 Markdown HTML (支持 GFM、自动断行与表格)
-  const markdownHtml = useMemo(() => {
-    try {
-      marked.setOptions({
-        gfm: true,
-        breaks: true,
-      });
-      return marked.parse(rawContent) as string;
-    } catch (err) {
-      console.error('Markdown parse error:', err);
-      return `<pre class="whitespace-pre-wrap font-mono text-xs">${rawContent}</pre>`;
-    }
+  // 目录显示与隐藏状态 (可通过顶部按钮与文档内部目录按钮自由切换)
+  const [showToc, setShowToc] = useState(true);
+
+  // 解析 Markdown 与提取各级章节标题目录 (GFM 兼容、自动断行、章节锚点与 Mermaid 图表支持)
+  const { markdownHtml, tocItems } = useMemo(() => {
+    return parseMarkdown(rawContent);
   }, [rawContent]);
+
+  // 平滑滚动回目录 (若目录被折叠隐藏则自动展开)
+  const scrollToToc = () => {
+    if (!showToc) {
+      setShowToc(true);
+    }
+    scrollRef.current?.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
+  // 顶部按钮切换目录显示 / 回到目录
+  const handleToggleToc = () => {
+    if (tocItems.length === 0) return;
+
+    if (activeTab === 'raw') {
+      setActiveTab('preview');
+      setShowToc(true);
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const currentScroll = scrollRef.current?.scrollTop || 0;
+
+    // 当目录已展开且正文已向下滚动时，点击顶部目录按钮优先平滑回到目录
+    if (showToc && currentScroll > 120) {
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setShowToc((prev) => {
+      const next = !prev;
+      if (next) {
+        scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return next;
+    });
+  };
+
+  // 点击目录章节平滑滚动定位并高亮目标标题
+  const handleJumpToHeading = (id: string) => {
+    if (!scrollRef.current) return;
+    const targetEl = document.getElementById(id);
+    if (!targetEl) return;
+
+    const container = scrollRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = targetEl.getBoundingClientRect();
+    const offset = targetRect.top - containerRect.top + container.scrollTop - 20;
+
+    container.scrollTo({
+      top: Math.max(0, offset),
+      behavior: 'smooth',
+    });
+
+    targetEl.classList.remove('heading-target-highlight');
+    void targetEl.offsetWidth;
+    targetEl.classList.add('heading-target-highlight');
+    setTimeout(() => {
+      targetEl.classList.remove('heading-target-highlight');
+    }, 1800);
+  };
 
   // 一键复制
   const handleCopy = async () => {
@@ -280,6 +342,43 @@ export const TextReaderView: React.FC<TextReaderViewProps> = ({
             </button>
           </div>
 
+          {/* 目录显隐切换按钮 */}
+          <button
+            type="button"
+            onClick={handleToggleToc}
+            disabled={loading || Boolean(loadError) || tocItems.length === 0}
+            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition active:scale-95 shadow-2xs ${
+              tocItems.length === 0
+                ? 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed opacity-60'
+                : showToc && activeTab === 'preview'
+                ? 'bg-blue-50 text-blue-600 border-blue-200 font-semibold shadow-xs'
+                : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-blue-600'
+            }`}
+            title={
+              tocItems.length === 0
+                ? t('markdownModal.tocEmpty', '本文档未包含章节标题')
+                : showToc && showBackToTop
+                ? t('markdownModal.backToToc', '回到目录')
+                : showToc
+                ? t('markdownModal.tocHide', '隐藏目录')
+                : t('markdownModal.tocShow', '显示目录')
+            }
+          >
+            <ListTree className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline sm:inline">{t('markdownModal.toc', '目录')}</span>
+            {tocItems.length > 0 && (
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  showToc && activeTab === 'preview'
+                    ? 'bg-blue-200/60 text-blue-700 font-bold'
+                    : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {tocItems.length}
+              </span>
+            )}
+          </button>
+
           {/* 复制文本内容 */}
           <button
             type="button"
@@ -355,10 +454,79 @@ export const TextReaderView: React.FC<TextReaderViewProps> = ({
         ) : (
           <div className="max-w-4xl mx-auto w-full p-5 sm:p-8 sm:px-12">
             {activeTab === 'preview' ? (
-              <div
-                className="markdown-content max-w-none text-slate-800 leading-relaxed text-sm selection:bg-blue-100"
-                dangerouslySetInnerHTML={{ __html: markdownHtml }}
-              />
+              <>
+                {/* 文件顶部目录区域 (基于 Markdown 语法章节级别生成，可由顶部按钮或收起按钮控制) */}
+                {showToc && tocItems.length > 0 && (
+                  <div className="mb-8 p-4 sm:p-5 bg-gradient-to-b from-slate-50/90 to-slate-50/40 hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all animate-fade-in">
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/70">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-xl bg-blue-100/90 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+                          <ListTree className="w-4 h-4" />
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xs sm:text-sm font-bold text-slate-800">
+                            {t('markdownModal.tocTitle', '文档目录')}
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-400">
+                            {t('markdownModal.tocCount', { count: tocItems.length })}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowToc(false)}
+                        className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-600 px-2.5 py-1 rounded-lg hover:bg-slate-200/60 transition font-medium"
+                        title={t('markdownModal.tocHide', '隐藏目录')}
+                      >
+                        <span>{t('markdownModal.tocCollapse', '收起目录')}</span>
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* 章节链接层级列表 */}
+                    <nav className="max-h-72 sm:max-h-80 overflow-y-auto custom-scrollbar pr-1.5 space-y-0.5">
+                      {tocItems.map((tocItem, idx) => {
+                        const indentClass =
+                          tocItem.level === 1
+                            ? 'pl-2 font-semibold text-slate-800 text-xs sm:text-sm'
+                            : tocItem.level === 2
+                            ? 'pl-5 font-medium text-slate-700 text-xs sm:text-sm'
+                            : tocItem.level === 3
+                            ? 'pl-8 text-slate-600 text-xs'
+                            : tocItem.level === 4
+                            ? 'pl-11 text-slate-500 text-xs'
+                            : 'pl-14 text-slate-400 text-[11px]';
+
+                        return (
+                          <button
+                            key={`${tocItem.id}-${idx}`}
+                            type="button"
+                            onClick={() => handleJumpToHeading(tocItem.id)}
+                            className={`w-full text-left py-1.5 px-2 rounded-lg hover:bg-blue-50/80 hover:text-blue-600 transition-colors flex items-center gap-2 group truncate ${indentClass}`}
+                            title={tocItem.cleanText}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 transition-transform group-hover:scale-125 ${
+                                tocItem.level === 1
+                                  ? 'bg-blue-600 ring-2 ring-blue-100'
+                                  : tocItem.level === 2
+                                  ? 'bg-blue-400'
+                                  : 'bg-slate-300 group-hover:bg-blue-400'
+                              }`}
+                            />
+                            <span className="truncate">{tocItem.cleanText}</span>
+                          </button>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                )}
+
+                <MarkdownRenderer
+                  html={markdownHtml}
+                  className="markdown-content max-w-none text-slate-800 leading-relaxed text-sm selection:bg-blue-100"
+                />
+              </>
             ) : (
               <pre className="font-mono text-xs sm:text-sm text-slate-800 bg-slate-50/80 p-5 rounded-2xl border border-slate-200 whitespace-pre-wrap break-words leading-relaxed select-text shadow-inner">
                 {rawContent}
@@ -367,16 +535,30 @@ export const TextReaderView: React.FC<TextReaderViewProps> = ({
           </div>
         )}
 
-        {/* 浮动“回到顶部”按钮 (长文本滚动超过一定距离时自动显示) */}
+        {/* 浮动操作按钮组：“回到目录”与“回到顶部” */}
         {showBackToTop && (
-          <button
-            onClick={scrollToTop}
-            className="fixed sm:absolute bottom-14 right-6 sm:right-10 z-20 flex items-center gap-1 px-3 py-2 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-300 shadow-md text-xs font-medium transition-all active:scale-95 animate-fade-in"
-            title="回到顶部"
-          >
-            <ArrowUp className="w-3.5 h-3.5" />
-            <span>回到顶部</span>
-          </button>
+          <div className="fixed sm:absolute bottom-12 right-4 sm:right-8 z-20 flex items-center gap-2 animate-fade-in">
+            {tocItems.length > 0 && activeTab === 'preview' && (
+              <button
+                type="button"
+                onClick={scrollToToc}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 border border-blue-500/30 text-xs font-semibold transition-all active:scale-95"
+                title={t('markdownModal.backToToc', '回到目录')}
+              >
+                <ListTree className="w-3.5 h-3.5" />
+                <span>{t('markdownModal.backToToc', '回到目录')}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/95 hover:bg-slate-50 backdrop-blur-md border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-300 shadow-md text-xs font-medium transition-all active:scale-95"
+              title={t('markdownModal.backToTop', '回到顶部')}
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+              <span>{t('markdownModal.backToTop', '回到顶部')}</span>
+            </button>
+          </div>
         )}
       </div>
 
