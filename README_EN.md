@@ -277,21 +277,23 @@ flowchart TD
     subgraph StorageLayer["Storage Layer - No-DB Atomic Storage"]
         JSONIndex["records.json (Atomic Rename Index)"]
         Config["lightdrop.config.json (Zero-Restart Config)"]
-        FileDir["files/<recordId>/ (Partitioned Storage)"]
+        FileDir["files/{recordId}/ (Partitioned Storage)"]
         Audit["audit_logs.json (Local Security Audit)"]
     end
 
+    RemotePeer["LAN Remote Peer"]
+
     UI --> Router
     Reader --> UI
-    WSClient <-->|Full-Duplex Sub-Second Sync & P2P Signaling| WSServer
-    P2PEngine <==>|WebRTC DataChannel LAN Direct Link (Preferred)| P2PEngine
-    P2PEngine -.->|WebSocket In-Memory Relay Fallback| WSServer
+    WSClient <-->|"Full-Duplex Sync & P2P Signaling"| WSServer
+    P2PEngine <-->|"WebRTC DataChannel Direct Transfer"| RemotePeer
+    P2PEngine -.->|"WebSocket In-Memory Relay Fallback"| WSServer
     P2PEngine --> P2PStorage
     Router --> JSONIndex
     Router --> FileDir
     Router --> Audit
     Router --> Config
-    MDNS -.->|Self-Healing Network Discovery| ClientLayer
+    MDNS -.->|"Self-Healing Discovery"| ClientLayer
 ```
 
 ### ⚡ Deep Dive into P2P Technical Architecture

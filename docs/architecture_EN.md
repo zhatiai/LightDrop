@@ -63,7 +63,7 @@ flowchart TD
 
     subgraph Layer5["5. Persistence & Storage Layer"]
         AtomicDB["FileDatabase (Atomic Rename Index records.json)"]
-        StorageSvc["StorageService (Partitioned Streaming Disk Storage files/<id>/)"]
+        StorageSvc["StorageService (Partitioned Streaming Disk Storage files/{id}/)"]
         AuditSvc["AuditService (Host / Admin Security Audit Logs)"]
         ConfigMgr["ConfigManager (Hot-Reloading Configuration lightdrop.config.json)"]
     end
@@ -113,7 +113,7 @@ sequenceDiagram
     DB->>Disk: 2. Write snapshot to temporary mirror (records.json.tmp)
     Disk-->>DB: Write confirmed (fs.writeFileSync)
     DB->>Disk: 3. Atomic replace records.json.tmp -> records.json
-    Note over Disk: fs.renameSync (Kernel-level atomic operation; zero read/write tearing)
+    Note over Disk: fs.renameSync (Kernel-level atomic operation, zero read/write tearing)
     Disk-->>DB: Atomic replacement complete
     DB-->>Route: Mutation confirmed
 ```

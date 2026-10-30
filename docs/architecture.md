@@ -63,7 +63,7 @@ flowchart TD
 
     subgraph Layer5["5. 持久化与存储层 (Persistence & Storage Layer)"]
         AtomicDB["FileDatabase (原子重命名索引 records.json)"]
-        StorageSvc["StorageService (物理分片流式落盘 files/<id>/)"]
+        StorageSvc["StorageService (物理分片流式落盘 files/{id}/)"]
         AuditSvc["AuditService (本机/管理员安全审计日志)"]
         ConfigMgr["ConfigManager (免重启热更新配置 lightdrop.config.json)"]
     end

@@ -281,21 +281,23 @@ flowchart TD
     subgraph StorageLayer["持久化层 (Storage) - No-DB Atomic Storage"]
         JSONIndex["records.json (原子重命名索引)"]
         Config["lightdrop.config.json (免重启热更新配置)"]
-        FileDir["files/<recordId>/ (分片物理存储)"]
+        FileDir["files/{recordId}/ (分片物理存储)"]
         Audit["audit_logs.json (本地安全审计)"]
     end
 
+    RemotePeer["局域网对端设备 (Remote Peer)"]
+
     UI --> Router
     Reader --> UI
-    WSClient <-->|全双工毫秒级同步 & P2P 信令中继| WSServer
-    P2PEngine <==>|WebRTC DataChannel 局域网直连 (优先)| P2PEngine
-    P2PEngine -.->|WebSocket 内存隧道降级| WSServer
+    WSClient <-->|"全双工状态同步与信令中继"| WSServer
+    P2PEngine <-->|"WebRTC DataChannel 局域网直连"| RemotePeer
+    P2PEngine -.->|"WebSocket 内存隧道降级中继"| WSServer
     P2PEngine --> P2PStorage
     Router --> JSONIndex
     Router --> FileDir
     Router --> Audit
     Router --> Config
-    MDNS -.->|网络自愈感知| ClientLayer
+    MDNS -.->|"网络自愈感知"| ClientLayer
 ```
 
 ### ⚡ P2P 点对点技术实现深度解析
