@@ -65,7 +65,7 @@
 ## 💡 项目亮点
 
 <p align="center">
-  <img width="1171" height="866" alt="LightDrop Dashboard Preview" src="https://github.com/user-attachments/assets/bd41f9ad-9a83-4ecb-82ee-aea722e01a00" />
+  <img width="1024" alt="LightDrop Dashboard Preview" src="./docs/images/dashboard-zh.png" />
 </p>
 
 在跨设备文件与文本互传场景中，现有方案往往存在诸多痛点与限制：
@@ -150,11 +150,20 @@
 - **UDP 自发现与连接断线自愈**：集成轻量 UDP 8089 端口广播信标，前端实时监听网络断线与 WebSocket 变动事件，网络恢复时静默重连与寻址自愈。
 
 ### 11. 🚀 点对点 (P2P) 极速直传与双轨传输引擎
+
+<p align="center">
+  <img width="1024" alt="LightDrop P2P Direct Drop Mode" src="./docs/images/p2p-zh.png" />
+</p>
+
 - **局域网设备自发现与在线感知**：自动发现同网段在线设备，动态生成专属设备卡片并标识系统与浏览器类型，支持一键设备收藏与长连接互信会话；
 - **WebRTC DataChannel 极速直连**：两端设备优先建立端到端加密通道（DTLS/SCTP），跑满局域网千兆/万兆带宽，大文件直传不经服务端磁盘中转，保护极致隐私；
 - **智能双轨降级与 100% 连通保障**：面对跨子网隔离或防火墙阻断 UDP 时，1.2 秒内自动平滑降级为 WebSocket 内存流式管道，兼顾极致传输速率与复杂内网环境 100% 连通性；
 - **严格背压控制与流式分片**：采用 64KB 流式分片与严格背压流控机制（256KB 唤醒 / 1MB 阈值），内存占用严格恒定在 2MB 以内，大文件传输零卡顿、零内存泄漏；
 - **IndexedDB 离线持久化与零落盘安全**：接收的文件与文本完全不经服务端磁盘存储，前端自动持久化存入浏览器本地 IndexedDB，支持离线极速调取与 0 流量导出。
+
+<p align="center">
+  <img width="1024" alt="LightDrop P2P Device Picker Modal" src="./docs/images/p2p-picker-zh.png" />
+</p>
 
 ---
 

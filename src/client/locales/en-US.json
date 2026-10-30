@@ -1,4 +1,16 @@
 {
+  "common": {
+    "close": "Close",
+    "done": "Done",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "reject": "Decline",
+    "save": "Save",
+    "delete": "Delete",
+    "copy": "Copy",
+    "refresh": "Refresh",
+    "back": "Back"
+  },
   "header": {
     "title": "LightDrop",
     "subtitle": "Any visitor can copy text and download files without login.",
@@ -787,7 +799,17 @@
     "disconnectAllSessions": "Disconnect All",
     "disconnectAllConfirm": "Are you sure you want to disconnect all active P2P direct sessions?",
     "noActiveSessions": "No active P2P sessions",
-    "sendToThisPeer": "Send Target"
+    "sendToThisPeer": "Send Target",
+    "sessionFeature1": "Both peers can exchange text and files anytime without repeating handshake confirmation popups.",
+    "sessionFeature2": "Transferred data resides strictly in local browser cache; secure with zero server storage.",
+    "sessionFeature3": "You can maintain active sessions with multiple peers concurrently and disconnect anytime in the manager.",
+    "acceptAllWithCount": "Accept All ({{count}} requests)",
+    "sessionEmptyDesc": "After establishing a session, peers can exchange text and large files directly into local cache with 0 server storage.",
+    "goDiscoverToConnect": "Discover Peers to Connect",
+    "directActive": "Direct Active",
+    "tabCloseTip": "Active sessions automatically disconnect when refreshing or closing this tab",
+    "discoverMore": "Discover More Devices",
+    "close": "Close"
   }
 }
 

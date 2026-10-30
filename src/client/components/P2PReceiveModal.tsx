@@ -285,7 +285,7 @@ export const P2PReceiveModal: React.FC<P2PReceiveModalProps> = ({
               onClick={onDismiss}
               className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs transition active:scale-95"
             >
-              {isCompleted ? t('common.done', '完成') : t('common.close', '关闭')}
+              {isCompleted ? t('common.done', 'Done') : t('common.close', 'Close')}
             </button>
           </div>
         </div>

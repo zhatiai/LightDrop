@@ -1,4 +1,16 @@
 {
+  "common": {
+    "close": "关闭",
+    "done": "完成",
+    "cancel": "取消",
+    "confirm": "确认",
+    "reject": "拒绝",
+    "save": "保存",
+    "delete": "删除",
+    "copy": "复制",
+    "refresh": "刷新",
+    "back": "返回"
+  },
   "header": {
     "title": "LightDrop",
     "subtitle": "任何访问者都可复制文本、下载文件，无需登录。",
@@ -787,7 +799,17 @@
     "disconnectAllSessions": "全部断开",
     "disconnectAllConfirm": "确定断开所有已建立的 P2P 直连会话吗？",
     "noActiveSessions": "当前暂无已连接的 P2P 会话",
-    "sendToThisPeer": "设为目标"
+    "sendToThisPeer": "设为目标",
+    "sessionFeature1": "双方可随时彼此发送文本或文件，免除逐次握手弹窗确认。",
+    "sessionFeature2": "传输数据仅保留在彼此浏览器缓存，安全且零服务器存储。",
+    "sessionFeature3": "您可同时与多个设备保持长连接，并随时在管理面板中独立断开。",
+    "acceptAllWithCount": "全部同意 ({{count}} 个请求)",
+    "sessionEmptyDesc": "建立长连接后，双端可互发文本与大文件，直接写入本地缓存，零服务器存储。",
+    "goDiscoverToConnect": "去发现设备建立长连接",
+    "directActive": "直连活跃",
+    "tabCloseTip": "刷新或关闭当前标签页时，长连接会话将自动清理",
+    "discoverMore": "发现更多设备",
+    "close": "关闭"
   }
 }
 

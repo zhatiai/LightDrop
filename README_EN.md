@@ -65,7 +65,7 @@
 ## 💡 Why LightDrop?
 
 <p align="center">
-  <img width="1177" height="870" alt="LightDrop Dashboard Preview" src="https://github.com/user-attachments/assets/79b4cab8-0450-41e9-bf11-8638a0c09faa" />
+  <img width="1024" alt="LightDrop Dashboard Preview" src="./docs/images/dashboard-en.png" />
 </p>
 
 Transferring files and text snippets between diverse devices on a local network has traditionally been frustrating:
@@ -150,6 +150,11 @@ Transferring files and text snippets between diverse devices on a local network 
 - **UDP Discovery Beacon & Disconnect Self-Healing**: Includes an ultra-lightweight UDP 8089 discovery beacon and WebSocket `NETWORK_CHANGED` broadcast, enabling clients to silently detect IP shifts and auto-reconnect without user intervention.
 
 ### 11. 🚀 Peer-to-Peer (P2P) Direct Transfer & Dual-Channel Engine
+
+<p align="center">
+  <img width="1024" alt="LightDrop P2P Device Picker Modal" src="./docs/images/p2p-picker-en.png" />
+</p>
+
 - **LAN Device Auto-Discovery & Presence**: Automatically discovers peer devices on the same subnet, dynamically generating device cards with OS/browser badges, and supporting device favorites and persistent mutual-trust sessions;
 - **WebRTC DataChannel Direct Transfer**: Establishes end-to-end encrypted tunnels (DTLS/SCTP) directly between peers to saturate full Gigabit/10G LAN bandwidth without hitting server disks, ensuring maximum privacy;
 - **Intelligent Dual-Channel Fallback & 100% Reachability**: Seamlessly downgrades to a WebSocket in-memory streaming relay within 1.2s when encountering VLAN isolation or strict UDP firewall rules, guaranteeing 100% delivery across complex enterprise networks;

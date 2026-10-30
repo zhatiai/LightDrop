@@ -109,7 +109,7 @@ export const P2PSessionManagerModal: React.FC<P2PSessionManagerModalProps> = ({
                 {t('p2p.noActiveSessions', '当前暂无已连接的 P2P 会话')}
               </p>
               <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
-                建立长连接后，双端可互发文本与大文件，直接写入本地缓存，零服务器存储。
+                {t('p2p.sessionEmptyDesc', '建立长连接后，双端可互发文本与大文件，直接写入本地缓存，零服务器存储。')}
               </p>
               {onOpenDevicePicker && (
                 <button
@@ -121,7 +121,7 @@ export const P2PSessionManagerModal: React.FC<P2PSessionManagerModalProps> = ({
                   className="mt-5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>去发现设备建立长连接</span>
+                  <span>{t('p2p.goDiscoverToConnect', '去发现设备建立长连接')}</span>
                 </button>
               )}
             </div>
@@ -147,7 +147,7 @@ export const P2PSessionManagerModal: React.FC<P2PSessionManagerModalProps> = ({
                       </span>
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-semibold shrink-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        直连活跃
+                        {t('p2p.directActive', '直连活跃')}
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
@@ -201,7 +201,7 @@ export const P2PSessionManagerModal: React.FC<P2PSessionManagerModalProps> = ({
         <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3 shrink-0">
           <div className="text-[11px] text-slate-500 flex items-center gap-1">
             <AlertCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>刷新或关闭当前标签页时，长连接会话将自动清理</span>
+            <span>{t('p2p.tabCloseTip', '刷新或关闭当前标签页时，长连接会话将自动清理')}</span>
           </div>
           {onOpenDevicePicker && (
             <button
@@ -213,7 +213,7 @@ export const P2PSessionManagerModal: React.FC<P2PSessionManagerModalProps> = ({
               className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center gap-1 shadow-2xs shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>发现更多设备</span>
+              <span>{t('p2p.discoverMore', '发现更多设备')}</span>
             </button>
           )}
         </div>

@@ -124,9 +124,9 @@ export const P2PSessionRequestModal: React.FC<P2PSessionRequestModalProps> = ({
                 {t('p2p.sessionFeatureTitle', '长连接会话特性：')}
               </p>
               <ul className="list-disc pl-4 space-y-0.5 text-slate-500">
-                <li>双方可随时彼此发送文本或文件，免除逐次握手弹窗确认。</li>
-                <li>传输数据仅保留在彼此浏览器缓存，安全且零服务器存储。</li>
-                <li>您可同时与多个设备保持长连接，并随时在管理面板中独立断开。</li>
+                <li>{t('p2p.sessionFeature1', '双方可随时彼此发送文本或文件，免除逐次握手弹窗确认。')}</li>
+                <li>{t('p2p.sessionFeature2', '传输数据仅保留在彼此浏览器缓存，安全且零服务器存储。')}</li>
+                <li>{t('p2p.sessionFeature3', '您可同时与多个设备保持长连接，并随时在管理面板中独立断开。')}</li>
               </ul>
             </div>
           </div>
@@ -141,7 +141,7 @@ export const P2PSessionRequestModal: React.FC<P2PSessionRequestModalProps> = ({
               className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center justify-center gap-1.5 shadow-xs"
             >
               <CheckCheck className="w-4 h-4" />
-              <span>全部同意 ({reqList.length} 个请求)</span>
+              <span>{t('p2p.acceptAllWithCount', { count: reqList.length, defaultValue: `全部同意 (${reqList.length} 个请求)` })}</span>
             </button>
           )}
 

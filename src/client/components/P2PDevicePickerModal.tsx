@@ -677,7 +677,7 @@ export const P2PDevicePickerModal: React.FC<P2PDevicePickerModalProps> = ({
             onClick={onClose}
             className="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium transition"
           >
-            {t('common.close', '关闭')}
+            {t('common.close', t('records.close', 'Close'))}
           </button>
         </div>
       </div>
