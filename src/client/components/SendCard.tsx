@@ -21,11 +21,23 @@ import {
   File as FileIcon,
   FileText,
   Image as ImageIcon,
+  Zap,
+  Radio,
+  Laptop,
+  Smartphone,
+  ChevronRight,
+  ShieldCheck,
+  UserCheck,
+  Link2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { PeerInfo, FavoritePeer, P2PSession } from '@shared/types';
 import { extractDroppedItems, ProcessedFolder } from '../utils/dragDrop';
 import { UploadProgressInfo } from '../utils/uploader';
 import { formatBytes } from '../utils/format';
+import { OutgoingTransferState } from '../hooks/useP2P';
+import { P2PDevicePickerModal } from './P2PDevicePickerModal';
+import { getOsDisplayName } from '../utils/platform';
 
 export interface PendingUploadFile {
   id: string;
@@ -69,12 +81,44 @@ interface SendCardProps {
     content?: string,
     title?: string
   ) => Promise<{ uploadedFilesCount: number; uploadedFoldersCount: number }>;
+
+  // P2P 模式拓展属性
+  onlinePeers?: PeerInfo[];
+  favoritePeers?: FavoritePeer[];
+  onStartP2PTransfer?: (
+    targetDeviceId: string,
+    targetNickname: string,
+    content: { text?: string; files?: File[]; title?: string }
+  ) => Promise<void>;
+  outgoingTransfer?: OutgoingTransferState | null;
+  onCancelP2PTransfer?: () => void;
+  onDismissOutgoingTransfer?: () => void;
+  onToggleFavorite?: (peer: PeerInfo, customName?: string) => void;
+  onUpdateFavoriteName?: (deviceId: string, name: string) => void;
+  activeSession?: P2PSession | null;
+  activeSessions?: P2PSession[];
+  onEstablishSession?: (peer: PeerInfo) => void;
+  onDisconnectSession?: (peerId?: string) => void;
+  onOpenSessionManager?: () => void;
 }
 
 export const SendCard: React.FC<SendCardProps> = ({
   onSendText,
   onUploadFiles,
   onUploadMixedBatch,
+  onlinePeers = [],
+  favoritePeers = [],
+  onStartP2PTransfer,
+  outgoingTransfer,
+  onCancelP2PTransfer,
+  onDismissOutgoingTransfer,
+  onToggleFavorite = () => {},
+  onUpdateFavoriteName = () => {},
+  activeSession,
+  activeSessions,
+  onEstablishSession,
+  onDisconnectSession,
+  onOpenSessionManager,
 }) => {
   const { t } = useTranslation();
   const [title, setTitle] = useState('');
@@ -82,6 +126,36 @@ export const SendCard: React.FC<SendCardProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordReadOnly, setPasswordReadOnly] = useState(true);
+
+  // 传输模式切换：'public' (公共看板，存盘共享) vs 'p2p' (点对点直传，对端进入接收模式)
+  const [transferMode, setTransferMode] = useState<'public' | 'p2p'>('public');
+  const [selectedPeer, setSelectedPeer] = useState<{
+    deviceId: string;
+    displayName: string;
+    isOnline: boolean;
+  } | null>(null);
+  const [pickerModalOpen, setPickerModalOpen] = useState(false);
+
+  const allActiveSessions = activeSessions || (activeSession ? [activeSession] : []);
+
+  const isSessionConnected = (peerId?: string) => {
+    if (!peerId) return false;
+    return allActiveSessions.some((s) => s.peerId === peerId);
+  };
+
+  // 当与对端建立长连接会话时，自动将目标设备同步为会话对端 (优先选中活跃会话)
+  useEffect(() => {
+    if (allActiveSessions.length > 0) {
+      if (!selectedPeer || !allActiveSessions.some((s) => s.peerId === selectedPeer.deviceId)) {
+        setSelectedPeer({
+          deviceId: allActiveSessions[0].peerId,
+          displayName: allActiveSessions[0].peerName,
+          isOnline: true,
+        });
+        setTransferMode('p2p');
+      }
+    }
+  }, [allActiveSessions]);
 
   // 待上传文件与文件夹列表（复制/粘贴/选择/拖拽的文件在此暂存，点击上传后统一执行）
   const [pendingFiles, setPendingFiles] = useState<PendingUploadFile[]>([]);
@@ -100,6 +174,37 @@ export const SendCard: React.FC<SendCardProps> = ({
   const folderInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 实时检测选中节点的在线与就绪状态
+  const matchedOnlinePeer = selectedPeer
+    ? onlinePeers.find((p) => p.deviceId === selectedPeer.deviceId)
+    : null;
+  const isSelectedPeerOnline = Boolean(matchedOnlinePeer);
+  const isSelectedPeerInReceiveMode = Boolean(matchedOnlinePeer?.isReceiveMode);
+
+  // 监听 P2P 直传状态变化反馈
+  useEffect(() => {
+    if (outgoingTransfer?.status === 'completed') {
+      handleClearAllPending();
+      setText('');
+      setTitle('');
+      showToast('success', t('p2p.transferCompletedToast', '⚡ P2P 直传已成功完成！'));
+      const timer = setTimeout(() => {
+        onDismissOutgoingTransfer?.();
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else if (outgoingTransfer?.status === 'rejected') {
+      showToast(
+        'error',
+        outgoingTransfer.errorMessage || t('p2p.transferRejectedToast', '对端拒绝了接收请求')
+      );
+    } else if (outgoingTransfer?.status === 'failed') {
+      showToast(
+        'error',
+        outgoingTransfer.errorMessage || t('p2p.transferFailedToast', 'P2P 传输连接中断')
+      );
+    }
+  }, [outgoingTransfer?.status, outgoingTransfer?.errorMessage, t, onDismissOutgoingTransfer]);
 
   // 用于在组件卸载时及时回收所有创建的 Object URL，杜绝内存泄漏
   const pendingFilesRef = useRef<PendingUploadFile[]>([]);
@@ -137,6 +242,51 @@ export const SendCard: React.FC<SendCardProps> = ({
   const showToast = (type: 'success' | 'error', message: string) => {
     setToastMsg({ type, text: message });
     setTimeout(() => setToastMsg(null), 4000);
+  };
+
+  // 获取操作系统图标
+  const getDeviceIcon = (osStr?: string) => {
+    const os = (osStr || '').toLowerCase();
+    if (os === 'ios' || os === 'android') {
+      return <Smartphone className="w-3.5 h-3.5 text-slate-500" />;
+    }
+    return <Laptop className="w-3.5 h-3.5 text-slate-500" />;
+  };
+
+  // P2P 直传发送处理 (先行握手，对端进入接收模式并确认后才开始发送数据)
+  const handleP2PSend = async () => {
+    if (!selectedPeer) {
+      setPickerModalOpen(true);
+      showToast('error', t('p2p.pleaseSelectDeviceFirst', '请先选择目标设备'));
+      return;
+    }
+    if (!isSelectedPeerOnline) {
+      showToast('error', t('p2p.targetDeviceOffline', '目标设备当前离线，无法发起直传'));
+      return;
+    }
+    if (!hasText && !hasPending && !hasTitle) {
+      showToast('error', t('send.toastEmpty'));
+      return;
+    }
+
+    // 收集所有待发送的单文件以及文件夹中的文件
+    const allFiles: File[] = [
+      ...pendingFiles.map((item) => item.file),
+      ...pendingFolders.flatMap((folder) => folder.folder.files),
+    ];
+
+    if (onStartP2PTransfer) {
+      try {
+        const textPayload = hasText ? text : (!allFiles.length && hasTitle ? title.trim() : undefined);
+        await onStartP2PTransfer(selectedPeer.deviceId, selectedPeer.displayName, {
+          text: textPayload,
+          files: allFiles.length > 0 ? allFiles : undefined,
+          title: hasTitle ? title.trim() : undefined,
+        });
+      } catch (err: any) {
+        showToast('error', err?.message || '发起 P2P 直传握手失败');
+      }
+    }
   };
 
   // 添加文件到待上传列表 (支持图片生成预览图)
@@ -808,6 +958,75 @@ export const SendCard: React.FC<SendCardProps> = ({
         </div>
       )}
 
+      {/* P2P 握手等待对端确认接收状态面板 */}
+      {outgoingTransfer && outgoingTransfer.status === 'requesting' && (
+        <div className="mb-4 bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 animate-fade-in shadow-2xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-amber-900 truncate">
+                  {t('p2p.waitingReceiverAccept', '已发起直传握手，等待对端进入接收模式...')}
+                </div>
+                <div className="text-[11px] text-amber-700/80 truncate">
+                  {t('p2p.targetCalling', {
+                    name: outgoingTransfer.targetNickname,
+                    defaultValue: `目标设备: ${outgoingTransfer.targetNickname}`,
+                  })}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onCancelP2PTransfer}
+              className="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 border border-amber-200 text-rose-600 text-[11px] font-medium transition active:scale-95 shrink-0"
+            >
+              {t('common.cancel', '取消')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* P2P 传输中实时进度面板 */}
+      {outgoingTransfer && outgoingTransfer.status === 'transferring' && outgoingTransfer.progress && (
+        <div className="mb-4 bg-blue-50/90 border border-blue-200 rounded-xl p-3.5 animate-fade-in shadow-2xs">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Zap className="w-4 h-4 text-blue-600 animate-pulse shrink-0 fill-current" />
+              <span className="text-xs font-bold text-blue-900 truncate">
+                {outgoingTransfer.progress.currentFileName || t('p2p.directTransferring', '⚡ P2P 高速直传中...')}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-xs font-mono font-bold text-blue-600">
+                {outgoingTransfer.progress.percent}%
+              </span>
+              <button
+                type="button"
+                onClick={onCancelP2PTransfer}
+                className="px-2 py-0.5 rounded-md bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-[11px] font-medium transition active:scale-95"
+              >
+                {t('common.cancel', '取消')}
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full bg-blue-200/50 rounded-full h-2 overflow-hidden mb-1.5">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-150"
+              style={{ width: `${Math.max(2, outgoingTransfer.progress.percent)}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+            <span>
+              {formatBytes(outgoingTransfer.progress.transferredBytes)} / {formatBytes(outgoingTransfer.progress.totalBytes)}
+            </span>
+            <span className="font-semibold text-blue-600">{outgoingTransfer.progress.speedText}</span>
+          </div>
+        </div>
+      )}
+
       {/* 消息提示浮层 */}
       {toastMsg && (
         <div
@@ -827,7 +1046,7 @@ export const SendCard: React.FC<SendCardProps> = ({
       )}
 
       {/* 头部标题与剪贴板操作 */}
-      <div className="flex items-center justify-between mb-3.5">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Edit3 className="w-4 h-4 text-blue-600" />
           <h2 className="text-sm font-bold text-slate-800 tracking-tight">{t('send.title')}</h2>
@@ -840,7 +1059,7 @@ export const SendCard: React.FC<SendCardProps> = ({
         <button
           type="button"
           onClick={handlePasteFromClipboard}
-          disabled={submitting}
+          disabled={submitting || outgoingTransfer?.status === 'requesting' || outgoingTransfer?.status === 'transferring'}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50/80 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-xs font-medium transition active:scale-95 disabled:opacity-50 shadow-2xs"
           title={t('send.pasteClipboardTitle')}
         >
@@ -848,6 +1067,188 @@ export const SendCard: React.FC<SendCardProps> = ({
           <span>{t('send.pasteClipboard')}</span>
         </button>
       </div>
+
+      {/* 传输模式分段切换器：公共看板 vs P2P 设备直传 */}
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl mb-3 border border-slate-200/70 select-none">
+        <button
+          type="button"
+          onClick={() => setTransferMode('public')}
+          className={`flex-1 py-1.5 px-2.5 sm:px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition whitespace-nowrap ${
+            transferMode === 'public'
+              ? 'bg-white text-blue-600 shadow-2xs border border-slate-200/50'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Radio className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+          <span className="hidden sm:inline">{t('send.modePublic', '公共看板 (局域网共享)')}</span>
+          <span className="sm:hidden">{t('send.modePublicShort', '公共看板')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTransferMode('p2p')}
+          className={`flex-1 py-1.5 px-2.5 sm:px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition whitespace-nowrap ${
+            transferMode === 'p2p'
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-2xs'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
+          <span className="hidden sm:inline">{t('send.modeP2P', 'P2P 设备直传')}</span>
+          <span className="sm:hidden">{t('send.modeP2PShort', '设备直传')}</span>
+          {onlinePeers.length > 0 && (
+            <span
+              className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"
+              title={t('p2p.onlineDevicesTip', {
+                count: onlinePeers.length,
+                defaultValue: `${onlinePeers.length} 台在线设备`,
+              })}
+            />
+          )}
+        </button>
+      </div>
+
+      {/* P2P 模式下：快捷直连对端横条 & 目标选择卡片 */}
+      {transferMode === 'p2p' && (
+        <div className="mb-3 space-y-2">
+          {/* 已直连节点快捷切换栏 */}
+          {allActiveSessions.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs">
+              <span className="text-[11px] text-slate-500 font-medium shrink-0 flex items-center gap-1">
+                <Link2 className="w-3 h-3 text-emerald-600" />
+                <span>直连设备:</span>
+              </span>
+              {allActiveSessions.map((session) => {
+                const isCurrent = selectedPeer?.deviceId === session.peerId;
+                return (
+                  <button
+                    key={session.peerId}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPeer({
+                        deviceId: session.peerId,
+                        displayName: session.peerName,
+                        isOnline: true,
+                      });
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition shrink-0 shadow-2xs ${
+                      isCurrent
+                        ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                        : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100/80 border border-emerald-200/80'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-white' : 'bg-emerald-500 animate-pulse'}`} />
+                    <span className="truncate max-w-[100px]">{session.peerName}</span>
+                  </button>
+                );
+              })}
+              {onOpenSessionManager && (
+                <button
+                  type="button"
+                  onClick={onOpenSessionManager}
+                  className="px-2 py-0.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 shrink-0 transition"
+                  title="管理所有长连接会话"
+                >
+                  管理 ({allActiveSessions.length})
+                </button>
+              )}
+            </div>
+          )}
+
+          {selectedPeer ? (
+            <div className="p-2.5 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50/70 to-indigo-50/40 flex items-center justify-between gap-2.5 shadow-2xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className={`w-8 h-8 rounded-lg bg-gradient-to-br ${
+                    matchedOnlinePeer?.avatarColor || 'from-blue-500 to-indigo-600'
+                  } text-white flex items-center justify-center text-sm shadow-2xs shrink-0`}
+                >
+                  {matchedOnlinePeer?.avatarEmoji || '✨'}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800 truncate" title={selectedPeer.displayName}>
+                      {selectedPeer.displayName}
+                    </span>
+                    {isSessionConnected(selectedPeer.deviceId) ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {t('p2p.sessionConnected', '长连接直通中')}
+                      </span>
+                    ) : isSelectedPeerOnline ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-700 font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {isSelectedPeerInReceiveMode ? t('p2p.readyToReceive', '接收就绪') : t('p2p.online', '在线')}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        {t('p2p.offline', '离线')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1.5 truncate mt-0.5">
+                    <span className="inline-flex items-center gap-1">
+                      {getDeviceIcon(matchedOnlinePeer?.os)}
+                      {getOsDisplayName(matchedOnlinePeer?.os as any)}
+                    </span>
+                    <span>•</span>
+                    <span>{matchedOnlinePeer?.clientIp || '局域网'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isSessionConnected(selectedPeer.deviceId) ? (
+                  <button
+                    type="button"
+                    onClick={() => onDisconnectSession?.(selectedPeer.deviceId)}
+                    className="px-2 py-1 text-xs font-medium bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-lg transition active:scale-95 shadow-2xs"
+                    title={t('p2p.disconnectSession', '断开长连接')}
+                  >
+                    {t('p2p.disconnect', '断开')}
+                  </button>
+                ) : isSelectedPeerOnline && matchedOnlinePeer && onEstablishSession ? (
+                  <button
+                    type="button"
+                    onClick={() => onEstablishSession(matchedOnlinePeer)}
+                    className="px-2 py-1 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-lg transition active:scale-95 flex items-center gap-1 shadow-2xs"
+                    title={t('p2p.establishSessionTip', '建立免握手双向长连接')}
+                  >
+                    <Link2 className="w-3 h-3" />
+                    <span>{t('p2p.connectSession', '长连接')}</span>
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => setPickerModalOpen(true)}
+                  className="px-2.5 py-1 text-xs font-medium bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition shadow-2xs active:scale-95 shrink-0"
+                >
+                  {t('p2p.changeDevice', '更换')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPickerModalOpen(true)}
+              className="w-full p-2.5 rounded-xl border border-dashed border-blue-300 bg-blue-50/50 hover:bg-blue-50 flex items-center justify-between text-blue-700 text-xs font-medium transition group cursor-pointer shadow-2xs"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                  <Radio className="w-3.5 h-3.5 animate-pulse" />
+                </div>
+                <span>{t('p2p.selectTargetDevicePrompt', '选择接收设备 (从发现设备或已收藏选择)')}</span>
+              </div>
+              <span className="text-[11px] text-blue-500 font-mono flex items-center gap-1 group-hover:translate-x-0.5 transition">
+                <span>{onlinePeers.length} 台在线</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 发送标题 / 描述输入框（可选，用于在列表中展示该标题） */}
       <div className="mb-2.5">
@@ -1031,93 +1432,105 @@ export const SendCard: React.FC<SendCardProps> = ({
         </div>
       )}
 
-      {/* 访问密码设置栏 (常驻显示，默认为空，输入即生效，带清空图标) */}
-      <div
-        className={`mb-3.5 rounded-xl p-2.5 border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
-          password.trim()
-            ? 'bg-amber-50/70 border-amber-200/90 shadow-sm'
-            : 'bg-slate-50/70 hover:bg-slate-50 border-slate-200/80'
-        }`}
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <div
-            className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition ${
-              password.trim() ? 'bg-amber-100 text-amber-700' : 'bg-slate-200/70 text-slate-500'
-            }`}
-          >
-            <Lock className="w-3.5 h-3.5" />
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-            <span
-              className={`text-xs font-semibold tracking-tight ${
-                password.trim() ? 'text-amber-900' : 'text-slate-700'
+      {/* 访问密码设置栏 (在公共看板模式下显示密码，在 P2P 模式下显示端对端安全直传提示) */}
+      {transferMode === 'p2p' ? (
+        <div className="mb-3.5 rounded-xl p-2.5 border border-indigo-100 bg-indigo-50/50 flex items-center gap-2 text-indigo-900 text-xs shadow-2xs">
+          <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+          <span className="text-[11px] leading-relaxed">
+            {t(
+              'p2p.p2pDirectNotice',
+              '⚡ P2P 点对点极速直传模式：数据直接发送至目标设备，零服务器存储，安全高效。'
+            )}
+          </span>
+        </div>
+      ) : (
+        <div
+          className={`mb-3.5 rounded-xl p-2.5 border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
+            password.trim()
+              ? 'bg-amber-50/70 border-amber-200/90 shadow-sm'
+              : 'bg-slate-50/70 hover:bg-slate-50 border-slate-200/80'
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition ${
+                password.trim() ? 'bg-amber-100 text-amber-700' : 'bg-slate-200/70 text-slate-500'
               }`}
             >
-              {t('send.passwordLabel')}
-            </span>
-            <span className="text-[11px] text-slate-400">
-              {password.trim()
-                ? t('send.passwordProtected')
-                : t('send.passwordPublic')}
-            </span>
+              <Lock className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+              <span
+                className={`text-xs font-semibold tracking-tight ${
+                  password.trim() ? 'text-amber-900' : 'text-slate-700'
+                }`}
+              >
+                {t('send.passwordLabel')}
+              </span>
+              <span className="text-[11px] text-slate-400">
+                {password.trim()
+                  ? t('send.passwordProtected')
+                  : t('send.passwordPublic')}
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div className="relative w-full sm:w-60 shrink-0">
-          <input
-            ref={passwordInputRef}
-            type={showPassword ? 'text' : 'password'}
-            name="lightdrop_custom_token_no_fill"
-            id="lightdrop_custom_token_no_fill"
-            autoComplete="new-password"
-            autoCorrect="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            readOnly={passwordReadOnly}
-            onFocus={() => setPasswordReadOnly(false)}
-            onBlur={() => {
-              if (!password) setPasswordReadOnly(true);
-            }}
-            data-lpignore="true"
-            data-1p-ignore="true"
-            data-form-type="other"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('send.passwordPlaceholder')}
-            disabled={submitting}
-            className={`w-full pl-3 pr-16 py-1.5 text-xs bg-white border rounded-lg focus:outline-none font-mono text-slate-800 shadow-sm transition disabled:opacity-50 ${
-              password.trim()
-                ? 'border-amber-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-400'
-                : 'border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-            }`}
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-400">
-            {password.length > 0 && (
+          <div className="relative w-full sm:w-60 shrink-0">
+            <input
+              ref={passwordInputRef}
+              type={showPassword ? 'text' : 'password'}
+              name="lightdrop_custom_token_no_fill"
+              id="lightdrop_custom_token_no_fill"
+              autoComplete="new-password"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              readOnly={passwordReadOnly}
+              onFocus={() => setPasswordReadOnly(false)}
+              onBlur={() => {
+                if (!password) setPasswordReadOnly(true);
+              }}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-form-type="other"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('send.passwordPlaceholder')}
+              disabled={submitting}
+              className={`w-full pl-3 pr-16 py-1.5 text-xs bg-white border rounded-lg focus:outline-none font-mono text-slate-800 shadow-sm transition disabled:opacity-50 ${
+                password.trim()
+                  ? 'border-amber-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-400'
+                  : 'border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+              }`}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-400">
+              {password.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPassword('')}
+                  disabled={submitting}
+                  className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+                  title={t('send.clearPassword')}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setPassword('')}
+                onClick={() => setShowPassword(!showPassword)}
                 disabled={submitting}
                 className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
-                title={t('send.clearPassword')}
+                title={showPassword ? t('send.hidePassword') : t('send.showPassword')}
               >
-                <X className="w-3.5 h-3.5" />
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={submitting}
-              className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
-              title={showPassword ? t('send.hidePassword') : t('send.showPassword')}
-            >
-              {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* 上传文件与上传文件夹两列按钮 */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      {/* 上传文件与上传文件夹两列按钮 (移动端自适应紧凑边距与文字截断) */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
         {/* 上传文件 */}
         <input
           ref={fileInputRef}
@@ -1129,15 +1542,15 @@ export const SendCard: React.FC<SendCardProps> = ({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={submitting}
-          className="flex items-center justify-center gap-2.5 p-3 rounded-xl border border-dashed border-blue-200 bg-blue-50/40 hover:bg-blue-50 text-blue-600 transition group active:scale-[0.99] disabled:opacity-50"
+          disabled={submitting || outgoingTransfer?.status === 'requesting' || outgoingTransfer?.status === 'transferring'}
+          className="flex items-center justify-center gap-2 sm:gap-2.5 p-2 sm:p-3 rounded-xl border border-dashed border-blue-200 bg-blue-50/40 hover:bg-blue-50 text-blue-600 transition group active:scale-[0.99] disabled:opacity-50 min-w-0"
         >
-          <div className="w-8 h-8 rounded-lg bg-blue-100/80 flex items-center justify-center group-hover:scale-105 transition">
-            <UploadCloud className="w-4 h-4 text-blue-600" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-100/80 flex items-center justify-center group-hover:scale-105 transition shrink-0">
+            <UploadCloud className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
           </div>
-          <div className="text-left">
-            <div className="text-xs font-semibold text-blue-700">{t('send.uploadFiles')}</div>
-            <div className="text-[10px] text-slate-400">{t('send.uploadFilesDesc')}</div>
+          <div className="text-left min-w-0">
+            <div className="text-xs font-semibold text-blue-700 truncate">{t('send.uploadFiles')}</div>
+            <div className="text-[10px] text-slate-400 truncate hidden xs:block">{t('send.uploadFilesDesc')}</div>
           </div>
         </button>
 
@@ -1156,29 +1569,99 @@ export const SendCard: React.FC<SendCardProps> = ({
         <button
           type="button"
           onClick={() => folderInputRef.current?.click()}
-          disabled={submitting}
-          className="flex items-center justify-center gap-2.5 p-3 rounded-xl border border-dashed border-sky-200 bg-sky-50/40 hover:bg-sky-50 text-sky-600 transition group active:scale-[0.99] disabled:opacity-50"
+          disabled={submitting || outgoingTransfer?.status === 'requesting' || outgoingTransfer?.status === 'transferring'}
+          className="flex items-center justify-center gap-2 sm:gap-2.5 p-2 sm:p-3 rounded-xl border border-dashed border-sky-200 bg-sky-50/40 hover:bg-sky-50 text-sky-600 transition group active:scale-[0.99] disabled:opacity-50 min-w-0"
         >
-          <div className="w-8 h-8 rounded-lg bg-sky-100/80 flex items-center justify-center group-hover:scale-105 transition">
-            <FolderUp className="w-4 h-4 text-sky-600" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-100/80 flex items-center justify-center group-hover:scale-105 transition shrink-0">
+            <FolderUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600" />
           </div>
-          <div className="text-left">
-            <div className="text-xs font-semibold text-sky-700">{t('send.uploadFolder')}</div>
-            <div className="text-[10px] text-slate-400">{t('send.uploadFolderDesc')}</div>
+          <div className="text-left min-w-0">
+            <div className="text-xs font-semibold text-sky-700 truncate">{t('send.uploadFolder')}</div>
+            <div className="text-[10px] text-slate-400 truncate hidden xs:block">{t('send.uploadFolderDesc')}</div>
           </div>
         </button>
       </div>
 
-      {/* 主操作按钮 (发送文本 / 上传文件 / 发送并上传) */}
-      <button
-        type="button"
-        onClick={handleSend}
-        disabled={submitting || (!hasText && !hasPending)}
-        className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 active:scale-[0.99] text-white rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm shadow-blue-500/25 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-      >
-        {getButtonIcon()}
-        <span>{getButtonText()}</span>
-      </button>
+      {/* 主操作按钮 (公共看板发送 或 P2P 设备直传发送) */}
+      {transferMode === 'p2p' ? (
+        <button
+          type="button"
+          onClick={handleP2PSend}
+          disabled={
+            !selectedPeer ||
+            !isSelectedPeerOnline ||
+            outgoingTransfer?.status === 'requesting' ||
+            outgoingTransfer?.status === 'transferring' ||
+            (!hasText && !hasPending && !hasTitle)
+          }
+          className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] text-white rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm shadow-blue-500/25 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+        >
+          {outgoingTransfer?.status === 'requesting' ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+              <span>{t('p2p.waitingAcceptBtn', '等待对端确认接收...')}</span>
+            </>
+          ) : outgoingTransfer?.status === 'transferring' ? (
+            <>
+              <Zap className="w-4 h-4 animate-pulse text-white fill-current" />
+              <span>{t('p2p.transferringBtn', '正在高速直传中...')}</span>
+            </>
+          ) : !selectedPeer ? (
+            <>
+              <Radio className="w-4 h-4 text-white" />
+              <span>{t('p2p.btnSelectTargetFirst', '请先选择目标设备')}</span>
+            </>
+          ) : !isSelectedPeerOnline ? (
+            <>
+              <AlertCircle className="w-4 h-4 text-white" />
+              <span>{t('p2p.btnTargetOffline', '目标设备当前离线')}</span>
+            </>
+          ) : (
+            <>
+              <Zap className="w-4 h-4 text-white fill-current" />
+              <span>
+                {isSessionConnected(selectedPeer.deviceId)
+                  ? t('p2p.btnSendToPeerSession', {
+                      name: selectedPeer.displayName,
+                      defaultValue: `⚡ 会话直传至 ${selectedPeer.displayName}`,
+                    })
+                  : t('p2p.btnSendToPeer', {
+                      name: selectedPeer.displayName,
+                      defaultValue: `⚡ 直传至 ${selectedPeer.displayName}`,
+                    })}
+              </span>
+            </>
+          )}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={submitting || (!hasText && !hasPending)}
+          className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 active:scale-[0.99] text-white rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm shadow-blue-500/25 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+        >
+          {getButtonIcon()}
+          <span>{getButtonText()}</span>
+        </button>
+      )}
+
+      {/* 嵌入式设备选择模态框 */}
+      <P2PDevicePickerModal
+        isOpen={pickerModalOpen}
+        onClose={() => setPickerModalOpen(false)}
+        onlinePeers={onlinePeers}
+        favoritePeers={favoritePeers}
+        selectedDeviceId={selectedPeer?.deviceId || null}
+        onSelectDevice={(device) => {
+          setSelectedPeer(device);
+        }}
+        onToggleFavorite={onToggleFavorite}
+        onUpdateFavoriteName={onUpdateFavoriteName}
+        activeSession={activeSession}
+        activeSessions={allActiveSessions}
+        onEstablishSession={onEstablishSession}
+        onDisconnectSession={onDisconnectSession}
+      />
     </div>
   );
 };

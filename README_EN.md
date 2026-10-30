@@ -41,11 +41,18 @@
   - [8. 🛡️ Host-Exclusive Audit Logs](#8-️-host-exclusive-audit-logs)
   - [9. 📱 Progressive Web App (PWA) Experience](#9--progressive-web-app-pwa-experience)
   - [10. 🌐 LAN IP Change Self-Healing & Stable Domain Discovery](#10--lan-ip-change-self-healing--stable-domain-discovery)
+  - [11. 🚀 Peer-to-Peer (P2P) Direct Transfer & Dual-Channel Engine](#11--peer-to-peer-p2p-direct-transfer--dual-channel-engine)
 - [🚀 Quick Start](#-quick-start)
   - [Method 1: Docker Compose (Recommended)](#method-1-docker-compose-recommended)
   - [Method 2: Smart Cross-Platform Deployment Scripts (`deploy.sh` / `deploy.bat` / `deploy.ps1`)](#method-2-smart-cross-platform-deployment-scripts-deploysh--deploybat--deployps1)
   - [Method 3: Build & Run from Source](#method-3-build--run-from-source)
 - [📐 Architecture & Tech Stack](#-architecture--tech-stack)
+  - [⚡ Deep Dive into P2P Technical Architecture](#-deep-dive-into-p2p-technical-architecture)
+    - [1. P2P Device Discovery Mechanism](#1-p2p-device-discovery-mechanism)
+    - [2. Connection Establishment & Signaling Protocol](#2-connection-establishment--signaling-protocol)
+    - [3. High-Performance Dual-Channel Transmission & Flow Control](#3-high-performance-dual-channel-transmission--flow-control)
+    - [4. P2P Resource Storage & Zero-Server Management Scheme](#4-p2p-resource-storage--zero-server-management-scheme)
+  - [📚 Technical Architecture & Design Document Navigation](#-technical-architecture--design-document-navigation)
 - [📦 DevOps Tooling](#-devops-tooling)
 - [⚙️ Configuration & Data Persistence](#️-configuration--data-persistence)
 - [🛡️ Network Safety & Enterprise Security](#️-network-safety--enterprise-security)
@@ -142,6 +149,13 @@ Transferring files and text snippets between diverse devices on a local network 
 - **Real-Time Mobile Push Notifications (Bark / Webhook)**: Configure your iOS Bark Key or custom Webhook in Settings; your phone receives instant push alerts with clickable URLs whenever host Wi-Fi changes;
 - **UDP Discovery Beacon & Disconnect Self-Healing**: Includes an ultra-lightweight UDP 8089 discovery beacon and WebSocket `NETWORK_CHANGED` broadcast, enabling clients to silently detect IP shifts and auto-reconnect without user intervention.
 
+### 11. 🚀 Peer-to-Peer (P2P) Direct Transfer & Dual-Channel Engine
+- **LAN Device Auto-Discovery & Presence**: Automatically discovers peer devices on the same subnet, dynamically generating device cards with OS/browser badges, and supporting device favorites and persistent mutual-trust sessions;
+- **WebRTC DataChannel Direct Transfer**: Establishes end-to-end encrypted tunnels (DTLS/SCTP) directly between peers to saturate full Gigabit/10G LAN bandwidth without hitting server disks, ensuring maximum privacy;
+- **Intelligent Dual-Channel Fallback & 100% Reachability**: Seamlessly downgrades to a WebSocket in-memory streaming relay within 1.2s when encountering VLAN isolation or strict UDP firewall rules, guaranteeing 100% delivery across complex enterprise networks;
+- **Strict Backpressure Control & 64KB Chunking**: Features 64KB streaming chunking and dual-sided backpressure control (256KB low threshold / 1MB high limit), pinning memory consumption strictly below 2MB with zero UI stutter or leaks;
+- **IndexedDB Offline Persistence & Zero-Server Retention**: Transferred files and snippets bypass server disks entirely; the receiving browser automatically commits Blobs to IndexedDB for offline instant access and zero-network downloads.
+
 ---
 
 ## 🚀 Quick Start
@@ -236,18 +250,23 @@ pnpm dev
 
 LightDrop follows a **Full-Stack TypeScript Monorepo architecture**, sharing strict type definitions between frontend and backend:
 
+> [!TIP]
+> 📖 **Deep-Dive Specifications**: Looking for architectural panoramas, No-DB storage internals, WebSocket session handling, and P2P protocol details? Check out our dedicated guides: [System Architecture & Technical Design Document](./docs/architecture_EN.md) and [P2P Direct Transfer & Local Storage Technical Design Document](./docs/p2p-design_EN.md).
+
 ```mermaid
 flowchart TD
     subgraph ClientLayer["Client Layer - React 18 + Vite + TailwindCSS"]
         UI["Responsive Web / PWA Interface"]
         Reader["Markdown Reader (GFM + Mermaid Engine)"]
         WSClient["WebSocket Client (Real-time Sync)"]
+        P2PEngine["P2P Engine (WebRTC DataChannel + Relay)"]
+        P2PStorage["IndexedDB + LocalStorage (P2P Secure Local Storage)"]
     end
 
     subgraph ServerLayer["Server Layer - Node.js + Express + WS"]
         Router["Express REST API (/api/records, /download)"]
-        WSServer["WebSocket Hub (Broadcasting & Session Pools)"]
-        MDNS["Bonjour / mDNS + UDP Beacon Engine"]
+        WSServer["WebSocket Hub (Broadcasting, Signaling & Peer Topology)"]
+        MDNS["Bonjour / mDNS + UDP Beacon Engine (Port 8089)"]
     end
 
     subgraph StorageLayer["Storage Layer - No-DB Atomic Storage"]
@@ -259,13 +278,90 @@ flowchart TD
 
     UI --> Router
     Reader --> UI
-    WSClient <-->|Full-Duplex Sub-Second Sync| WSServer
+    WSClient <-->|Full-Duplex Sub-Second Sync & P2P Signaling| WSServer
+    P2PEngine <==>|WebRTC DataChannel LAN Direct Link (Preferred)| P2PEngine
+    P2PEngine -.->|WebSocket In-Memory Relay Fallback| WSServer
+    P2PEngine --> P2PStorage
     Router --> JSONIndex
     Router --> FileDir
     Router --> Audit
     Router --> Config
     MDNS -.->|Self-Healing Network Discovery| ClientLayer
 ```
+
+### ⚡ Deep Dive into P2P Technical Architecture
+
+Given that web browsers operate inside sandboxed environments lacking native Raw UDP / broadcast socket capabilities, LightDrop designs a **two-tier, service-coordinated P2P transmission architecture**. Without requiring client installations or virtual network adapters, the system achieves sub-second device discovery, dual-channel adaptive data streaming, fine-grained backpressure flow control, and offline IndexedDB persistence.
+
+#### 1. P2P Device Discovery Mechanism
+
+Device discovery is architected into two decoupled tiers: **Service-Level Physical Network Discovery** and **Client-Level Browser Peer Topology Discovery**:
+
+- **Service-Level Physical Network Discovery (UDP Beacon + mDNS)**:
+  - **Active Beacon Announcement**: The server background service `UdpDiscoveryService` listens on `0.0.0.0:8089`. On cold startup or whenever physical network interfaces toggle, it broadcasts a `LIGHTDROP_ANNOUNCE` packet to `255.255.255.255:8089`, declaring its instance ID, IP, port, and Bonjour domain;
+  - **Passive Probe Response**: Continually monitors incoming probe packets containing `DISCOVER`, `PING`, `SCAN`, or `QUERY`, unicasting a `LIGHTDROP_PONG` packet with server metadata;
+  - **Broadcast Storm & Self-Echo Mitigation**: Each server process generates a unique `instanceId` to discard self-echo packets. Rate-limiting restricts responses to the same client IP to at most once per 500ms, and a 5-second TTL cache for network interfaces prevents frequent kernel system calls and CPU spikes.
+- **Client-Level Browser Peer Topology Discovery (WebSocket Hub)**:
+  - **Persistent Device Fingerprinting**: Each client generates a globally unique and stable `deviceId` (e.g. `node_<timestamp>_<random>`) stored in `localStorage`, bundled with its OS, browser family, SpongeBob avatar, and operating mode (e.g. Receive Mode);
+  - **Online Declaration (`PEER_REGISTER`)**: Upon opening the WebSocket connection, the browser immediately submits a `PEER_REGISTER` event. The server captures the real underlying socket client IP (`clientIp`) and enriches the peer info;
+  - **Full Snapshot Unicast + Incremental Broadcast**:
+    - **Full Snapshot Unicast**: The server only unicasts the active peer list (`PEER_ONLINE_LIST`, excluding self) to the newly connected node, preventing wasteful network floods;
+    - **Incremental Broadcast**: Other online peers receive a lightweight `PEER_JOINED` event. Attribute updates trigger `PEER_UPDATED`, and disconnections detected via 30s keep-alive pings trigger `PEER_LEFT`. Topology traffic is minimized to sub-millisecond, sub-hundred-byte JSON events.
+
+#### 2. Connection Establishment & Signaling Protocol
+
+Prior to data transfer, the system orchestrates mutual-consent handshakes, unicast signaling relay, and adaptive channel negotiation:
+
+- **Session Models & Handshake Protocols**:
+  - **Lightweight Single-Transfer Handshake**: The sender dispatches a `HANDSHAKE_REQUEST` containing file manifests, previews, total bytes, and sender fingerprint. The recipient inspects the interactive modal and returns a `HANDSHAKE_RESPONSE` (`accepted` / `rejected` / `busy` / `timeout`);
+  - **Persistent Mutual-Trust Session**: Peers can establish a long-lived mutual session (`SESSION_REQUEST` -> `SESSION_ESTABLISHED`). Active sessions bypass repetitive handshakes and unlock **0-RTT Instant Unidirectional Text Dispatch (`SESSION_DIRECT_TEXT`)**;
+  - **Strict Unicast Signaling Relay**: All session handshakes, SDP Offers/Answers, and ICE Candidates are encapsulated as `P2P_DIRECT_MESSAGE` and routed strictly by `targetDeviceId` through WebSocket memory. Unrelated nodes remain completely untouched.
+- **1.2s Adaptive Dual-Channel Negotiation**:
+  - During handshake initiation, the engine initializes an `RTCPeerConnection` with STUN candidates and creates an `RTCDataChannel` (`ordered: true`, binary type `arraybuffer`);
+  - **Fallback Timeout**: A 1200ms timeout window is allotted for LAN hole punching. If the DataChannel opens successfully within 1.2s, the mode locks into `webrtc` (DTLS/SCTP end-to-end encryption, maxing out LAN speeds). If cross-subnet routing, symmetric NAT, or strict corporate firewalls block UDP, the engine **seamlessly downgrades to `relay` mode** (streaming via the existing WebSocket in-memory tunnel), ensuring 100% transfer success.
+
+#### 3. High-Performance Dual-Channel Transmission & Flow Control
+
+To overcome memory spikes, buffer bloat, and browser tab freezes during large-file transfers, the P2P engine implements a strict streaming pipeline:
+
+- **64KB Streaming Chunking**:
+  - File reading avoids loading entire files into memory; it reads 64KB slices sequentially using `File.slice(offset, offset + 64KB)` as `ArrayBuffer`;
+  - Binary chunks are sent natively over WebRTC DataChannel, or converted to Base64 chunks over the WebSocket relay.
+- **Dual-Sided Backpressure Control**:
+  - **WebRTC Backpressure**: Monitors DataChannel buffer depth `dc.bufferedAmount`. When exceeding 1MB, sending halts until `onbufferedamountlow` triggers at the 256KB low-water mark;
+  - **WebSocket Backpressure**: Monitors `activeWs.bufferedAmount`. If outbound buffers accumulate above 512KB, the loop yields via `waitForWsDrain`;
+  - System memory consumption is strictly pinned at **< 2MB**, completely eliminating out-of-memory (OOM) browser crashes.
+- **True Outbound NIC Rate Measurement**:
+  - Real-time speeds and progress compute only bytes actually flushed from the network card (`actualDeliveredBytes = transferredBytes - buffered`), eliminating false 100% progress indications where data remains trapped in local socket buffers.
+- **Dual-Sided ACK Confirmation & Disk Assembly Sync**:
+  - During transfer, the receiver throttles progress ACKs (`TRANSFER_ACK`) back to the sender every 300ms or 256KB for precision alignment;
+  - **Final Completion Handshake**: The sender caps progress at 99% upon emitting all bytes. Only after the receiver verifies and commits all blobs to local storage and returns a `TRANSFER_COMPLETE_ACK` does the sender trigger its 100% completion callback, preventing single-sided hanging states.
+
+#### 4. P2P Resource Storage & Zero-Server Management Scheme
+
+LightDrop P2P strictly enforces a **zero-server retention and local-first privacy** architecture:
+
+- **Zero-Server-Disk-Retention**:
+  - P2P files and text snippets **never touch the server's disk storage** (they are never written to `data/files/` or `records.json`), leaving zero server-side logs or traces.
+- **Hybrid Local Persistence**:
+  - **Lightweight Metadata Layer (`localStorage`)**: Stores transfer summaries (`lightdrop_p2p_records` including transferId, peer nickname, avatar, timestamp, file counts, and sizes). These entries blend seamlessly into the main records table adorned with a prominent `P2P` badge;
+  - **Binary Blob Layer (`IndexedDB`)**: Once a transfer finishes (`completeP2PRecord`), binary blobs are committed into browser-local IndexedDB (`LightDrop_P2P_DB` -> `blobs` store, keyed by `${recordId}_${fileIndex}`). This bypasses the 5MB `localStorage` limit, supporting hundreds of megabytes or gigabytes of offline storage.
+- **Zero-Network Blob Export & Download**:
+  - When users view or download a P2P item, the records hook (`useRecords`) intercepts the `isP2P` flag, retrieves the Blob from IndexedDB via `getP2PRecordBlob()`, and triggers a native download via `URL.createObjectURL`; **0 external network bandwidth or server compute is consumed**.
+- **Atomic Lifecycle Management**:
+  - **Cascading Deletion**: Deleting a single P2P record atomically clears its `localStorage` index and purges all corresponding `IndexedDB` blobs;
+  - **Batch Clear**: Supports one-click purging of all local P2P cache via `clearAllLocalP2PRecords`;
+  - **Private Browsing Isolation**: Incognito mode or clearing website data instantly purges all P2P assets without leaving trace evidence on the host.
+
+### 📚 Technical Architecture & Design Document Navigation
+
+For developers and system architects seeking an in-depth understanding of LightDrop's internal design, storage models, and protocol pipelines, comprehensive technical specifications are available in the [`docs/`](./docs) directory:
+
+| Document | Languages | Core Coverage |
+| :--- | :--- | :--- |
+| 📘 **System Architecture & Technical Design** | [English](./docs/architecture_EN.md) · [简体中文](./docs/architecture.md) | Multi-tier topology, No-DB atomic rename engine, WebSocket connection pools, LAN IP self-healing, and enterprise security models |
+| 🚀 **P2P Direct Transfer & Local Storage Technical Design** | [English](./docs/p2p-design_EN.md) · [简体中文](./docs/p2p-design.md) | Two-tier discovery, WebRTC/Relay 1.2s adaptive negotiation, 64KB backpressure pipeline, and IndexedDB zero-server persistence |
+| 🛠️ **Remote Server Deployment Bug Report** | [Issue Retrospective](./docs/bug.md) | Comprehensive test coverage on Ubuntu 22.04 LTS, cross-platform shell compatibility analysis, and post-mortem fixes for 12 critical bugs |
 
 ### Directory Structure
 

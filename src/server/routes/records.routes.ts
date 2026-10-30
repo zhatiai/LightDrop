@@ -237,7 +237,7 @@ recordsRouter.post(
   '/upload',
   upload.array('files'),
   checkFileSizeLimit,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const files = req.files as Express.Multer.File[] | undefined;
     if (!files || files.length === 0) {
       res.status(400).json({ success: false, error: '请选择要上传的文件' });
@@ -273,11 +273,7 @@ recordsRouter.post(
         usedFileNames.add(originalName);
 
         const safeTargetFilePath = path.join(recordDir, originalName);
-        fs.copyFileSync(f.path, safeTargetFilePath);
-
-        try {
-          fs.unlinkSync(f.path);
-        } catch (_) {}
+        await storageService.moveUploadedFile(f.path, safeTargetFilePath);
 
         totalBytes += f.size;
         const ext = path.extname(originalName).replace('.', '').toLowerCase();
@@ -372,11 +368,7 @@ recordsRouter.post(
     fs.mkdirSync(recordDir, { recursive: true });
 
     const safeTargetFilePath = path.join(recordDir, originalName);
-    fs.copyFileSync(f.path, safeTargetFilePath);
-
-    try {
-      fs.unlinkSync(f.path);
-    } catch (_) {}
+    await storageService.moveUploadedFile(f.path, safeTargetFilePath);
 
     const now = new Date().toISOString();
     const isImg = isImageFile(originalName, mimeType.toString());
@@ -428,7 +420,7 @@ recordsRouter.post(
   '/upload-folder',
   upload.array('files'),
   checkFileSizeLimit,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const files = req.files as Express.Multer.File[] | undefined;
     if (!files || files.length === 0) {
       res.status(400).json({ success: false, error: '请选择要上传的文件夹' });
@@ -465,16 +457,7 @@ recordsRouter.post(
       const normalizedRelative = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
       const targetFilePath = path.join(recordDir, normalizedRelative);
 
-      const targetFileDir = path.dirname(targetFilePath);
-      if (!fs.existsSync(targetFileDir)) {
-        fs.mkdirSync(targetFileDir, { recursive: true });
-      }
-
-      fs.copyFileSync(f.path, targetFilePath);
-
-      try {
-        fs.unlinkSync(f.path);
-      } catch (_) {}
+      await storageService.moveUploadedFile(f.path, targetFilePath);
     }
 
     const customTitle = req.body.title ? fixFileName(req.body.title).trim() : '';

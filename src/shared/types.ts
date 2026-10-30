@@ -46,6 +46,16 @@ export interface ShareItem {
   passwordHash?: string; // 服务端内部密码哈希 (对外接口脱敏过滤)
   senderName?: string;   // 发送者/上传者昵称
   nickname?: string;     // 别名兼容
+  
+  // P2P 本地直传记录扩展字段 (仅存于浏览器本地缓存)
+  isP2P?: boolean;
+  p2pDirection?: 'send' | 'receive';
+  p2pPeerName?: string;
+  p2pPeerId?: string;
+  p2pStatus?: 'transferring' | 'completed' | 'failed' | 'cancelled';
+  p2pProgress?: number;  // 0 - 100
+  p2pSpeed?: string;
+  p2pTransferId?: string;
 }
 
 /**
@@ -135,12 +145,155 @@ export type WsEventType =
   | 'SETTINGS_UPDATED'
   | 'STATS_UPDATED'
   | 'AUDIT_LOGS_UPDATED'
-  | 'NETWORK_CHANGED';
+  | 'NETWORK_CHANGED'
+  // P2P 设备发现与信令事件
+  | 'PEER_REGISTER'
+  | 'PEER_UPDATE'
+  | 'PEER_ONLINE_LIST'
+  | 'PEER_JOINED'
+  | 'PEER_LEFT'
+  | 'PEER_UPDATED'
+  | 'P2P_DIRECT_MESSAGE';
 
 export interface WsMessage<T = any> {
   type: WsEventType;
   payload: T;
   timestamp: string;
+}
+
+/**
+ * P2P 在线设备信息
+ */
+export interface PeerInfo {
+  deviceId: string;          // 设备唯一稳定持久化 UUID
+  nickname: string;          // 角色昵称
+  os: string;                // 操作系统 (windows, macos, linux, android, ios)
+  browser?: string;          // 浏览器标识
+  clientIp?: string;         // 局域网 IP
+  isReceiveMode?: boolean;   // 是否处于专有接收模式
+  avatarEmoji?: string;      // 头像 Emoji
+  avatarColor?: string;      // 头像背景色
+  connectedAt?: string;      // 连接时间戳
+}
+
+/**
+ * 收藏的设备节点（持久化于本地存储）
+ */
+export interface FavoritePeer {
+  deviceId: string;          // 设备唯一 ID
+  customName?: string;       // 用户配置的自定义备注名称 (如 "我的办公电脑")
+  nickname: string;          // 对端原始昵称
+  os: string;                // 操作系统
+  createdAt: string;         // 收藏时间
+}
+
+/**
+ * P2P 长连接会话状态
+ */
+export interface P2PSession {
+  peerId: string;
+  peerName: string;
+  peerOs?: string;
+  peerAvatarEmoji?: string;
+  peerAvatarColor?: string;
+  establishedAt: string;
+}
+
+/**
+ * P2P 直传单播消息类型
+ */
+export type P2PDirectMessageType =
+  | 'HANDSHAKE_REQUEST'      // 发送方发起握手：询问对端是否接收
+  | 'HANDSHAKE_RESPONSE'     // 接收方回复握手：确认接收或拒绝
+  | 'HANDSHAKE_CANCEL'       // 发送方取消握手
+  | 'SIGNAL'                 // WebRTC SDP Offer/Answer 及 ICE Candidates
+  | 'TRANSFER_START'         // 传输开始通知 (协商通道)
+  | 'TRANSFER_DATA_CHUNK'    // 流式分片数据传输 (WebSocket 中继或 DataChannel)
+  | 'TRANSFER_COMPLETE'      // 传输完成通知
+  | 'TRANSFER_COMPLETE_ACK'  // 传输完成确认应答 (接收端文件保存就绪)
+  | 'TRANSFER_ACK'           // 传输进度确认应答 (真实送达对端)
+  | 'TRANSFER_CANCEL'        // 传输中断取消
+  | 'TRANSFER_ERROR'         // 传输错误告警
+  | 'SESSION_REQUEST'        // 请求建立长连接会话
+  | 'SESSION_ESTABLISH'      // 请求建立长连接会话 (兼容)
+  | 'SESSION_ESTABLISHED'    // 确认建立长连接会话
+  | 'SESSION_REJECT'         // 拒绝建立长连接会话
+  | 'SESSION_DISCONNECT'     // 主动断开长连接会话
+  | 'SESSION_DIRECT_TEXT';   // 长连接极速单向文本直发 (0 握手，0 延迟)
+
+/**
+ * 握手请求数据载荷
+ */
+export interface P2PHandshakeRequestPayload {
+  transferId: string;
+  sender: PeerInfo;
+  targetDeviceId: string;
+  isSessionTransfer?: boolean; // 是否处于长连接会话中免握手直传
+  itemType: 'text' | 'file' | 'folder' | 'mixed';
+  title?: string;
+  textContent?: string;
+  textPreview?: string;
+  textLength?: number;
+  files?: Array<{ name: string; size: number; type?: string }>;
+  totalSize: number;
+  totalCount: number;
+  timestamp: string;
+}
+
+/**
+ * 握手响应数据载荷
+ */
+export interface P2PHandshakeResponsePayload {
+  transferId: string;
+  accepted: boolean;
+  reason?: 'rejected' | 'busy' | 'timeout' | 'cancelled' | 'offline';
+  receiver?: PeerInfo;
+  timestamp: string;
+}
+
+/**
+ * 握手取消数据载荷
+ */
+export interface P2PHandshakeCancelPayload {
+  transferId: string;
+  senderDeviceId: string;
+  reason?: string;
+}
+
+/**
+ * WebRTC 信令数据载荷
+ */
+export interface P2PSignalPayload {
+  transferId: string;
+  senderDeviceId: string;
+  targetDeviceId: string;
+  signalType: 'offer' | 'answer' | 'candidate';
+  signal: any;
+}
+
+/**
+ * 降级中继分片数据载荷 (保证在特殊环境下的 100% 传输成功率)
+ */
+export interface P2PRelayChunkPayload {
+  transferId: string;
+  senderDeviceId: string;
+  targetDeviceId: string;
+  chunkIndex: number;
+  totalChunks: number;
+  data: string; // Base64 或纯文本
+  fileName?: string;
+  fileSize?: number;
+  isEnd?: boolean;
+}
+
+/**
+ * P2P 单播传输统一封装
+ */
+export interface P2PDirectMessage<T = any> {
+  messageType: P2PDirectMessageType;
+  targetDeviceId: string;
+  senderDeviceId: string;
+  payload: T;
 }
 
 /**

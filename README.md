@@ -41,11 +41,18 @@
   - [8. 🛡️ 本机专属操作审计日志 (Audit Logs)](#8-️-本机专属操作审计日志-audit-logs)
   - [9. 📱 PWA 原生跨平台体验](#9--pwa-原生跨平台体验)
   - [10. 🌐 局域网 IP 变动自愈与稳定域名发现](#10--局域网-ip-变动自愈与稳定域名发现)
+  - [11. 🚀 点对点 (P2P) 极速直传与双轨传输引擎](#11--点对点-p2p-极速直传与双轨传输引擎)
 - [🚀 快速开始](#-快速开始)
   - [方式一：Docker Compose（推荐）](#方式一docker-compose推荐)
   - [方式二：全平台智能运维部署脚本 (`deploy.sh` / `deploy.bat` / `deploy.ps1`)](#方式二全平台智能运维部署脚本-deploysh--deploybat--deployps1)
   - [方式三：本地源码运行](#方式三本地源码运行)
 - [📐 架构设计与技术栈](#-架构设计与技术栈)
+  - [⚡ P2P 点对点技术实现深度解析](#-p2p-点对点技术实现深度解析)
+    - [1. P2P 点对点设备发现原理](#1-p2p-点对点设备发现原理)
+    - [2. 连接建立与信令协商机制](#2-连接建立与信令协商机制)
+    - [3. 高性能双轨传输与流控实现](#3-高性能双轨传输与流控实现)
+    - [4. P2P 资源存储与无服务器管理方案](#4-p2p-资源存储与无服务器管理方案)
+  - [📚 架构与技术设计文档导航](#-架构与技术设计文档导航)
 - [📦 自动化运维体系](#-自动化运维体系)
 - [⚙️ 配置与数据持久化](#️-配置与数据持久化)
 - [🛡️ 网络安全与企业局域网设计](#️-网络安全与企业局域网设计)
@@ -142,6 +149,13 @@
 - **手机实时推送 (Bark / Webhook)**：设置中心支持填入 iOS Bark Key 或通用 Webhook 接收端，电脑切换 Wi-Fi 手机立即收到通知横幅，点击通知直接跳转进入最新服务；
 - **UDP 自发现与连接断线自愈**：集成轻量 UDP 8089 端口广播信标，前端实时监听网络断线与 WebSocket 变动事件，网络恢复时静默重连与寻址自愈。
 
+### 11. 🚀 点对点 (P2P) 极速直传与双轨传输引擎
+- **局域网设备自发现与在线感知**：自动发现同网段在线设备，动态生成专属设备卡片并标识系统与浏览器类型，支持一键设备收藏与长连接互信会话；
+- **WebRTC DataChannel 极速直连**：两端设备优先建立端到端加密通道（DTLS/SCTP），跑满局域网千兆/万兆带宽，大文件直传不经服务端磁盘中转，保护极致隐私；
+- **智能双轨降级与 100% 连通保障**：面对跨子网隔离或防火墙阻断 UDP 时，1.2 秒内自动平滑降级为 WebSocket 内存流式管道，兼顾极致传输速率与复杂内网环境 100% 连通性；
+- **严格背压控制与流式分片**：采用 64KB 流式分片与严格背压流控机制（256KB 唤醒 / 1MB 阈值），内存占用严格恒定在 2MB 以内，大文件传输零卡顿、零内存泄漏；
+- **IndexedDB 离线持久化与零落盘安全**：接收的文件与文本完全不经服务端磁盘存储，前端自动持久化存入浏览器本地 IndexedDB，支持离线极速调取与 0 流量导出。
+
 ---
 
 ## 🚀 快速开始
@@ -236,18 +250,23 @@ pnpm dev
 
 本项目采用 **TypeScript 全栈单仓 (Monorepo) 规范**，前后端共享底层类型契约与协议定义：
 
+> [!TIP]
+> 📖 **进阶技术文档**：想深入了解系统整体全景设计、No-DB 原子存储、WebSocket 连接池与 P2P 双轨协议实现细节？欢迎查阅 [系统整体架构与详细设计文档](./docs/architecture.md) 与 [P2P 点对点传输与存储设计文档](./docs/p2p-design.md)。
+
 ```mermaid
 flowchart TD
     subgraph ClientLayer["客户端 (Client) - React 18 + Vite + TailwindCSS"]
         UI["响应式 Web / PWA 界面"]
         Reader["Markdown 阅读器 (GFM + Mermaid 引擎)"]
         WSClient["WebSocket Client (实时状态同步)"]
+        P2PEngine["P2P Engine (WebRTC DataChannel + Relay)"]
+        P2PStorage["IndexedDB + LocalStorage (P2P 本地安全存储)"]
     end
 
     subgraph ServerLayer["服务端 (Server) - Node.js + Express + WS"]
         Router["Express REST API 路由 (/api/records, /download)"]
-        WSServer["WebSocket Hub (广播与连接池管理)"]
-        MDNS["Bonjour / mDNS + UDP 广播引擎"]
+        WSServer["WebSocket Hub (广播、信令中继与节点拓扑)"]
+        MDNS["Bonjour / mDNS + UDP 广播引擎 (Port 8089)"]
     end
 
     subgraph StorageLayer["持久化层 (Storage) - No-DB Atomic Storage"]
@@ -259,13 +278,90 @@ flowchart TD
 
     UI --> Router
     Reader --> UI
-    WSClient <-->|全双工毫秒级同步| WSServer
+    WSClient <-->|全双工毫秒级同步 & P2P 信令中继| WSServer
+    P2PEngine <==>|WebRTC DataChannel 局域网直连 (优先)| P2PEngine
+    P2PEngine -.->|WebSocket 内存隧道降级| WSServer
+    P2PEngine --> P2PStorage
     Router --> JSONIndex
     Router --> FileDir
     Router --> Audit
     Router --> Config
     MDNS -.->|网络自愈感知| ClientLayer
 ```
+
+### ⚡ P2P 点对点技术实现深度解析
+
+针对现代浏览器在纯 Web 环境下缺乏原生 Raw UDP / 广播套接字能力的限制，LightDrop 设计了一套**「两层分立、服务协调驱动」**的高性能 P2P 传输架构。系统在保持完全免装客户端、纯浏览器原生体验的前提下，实现了毫秒级设备自发现、WebRTC/WebSocket 双轨传输、纳秒级背压流控以及前端 IndexedDB 离线持久化管理。
+
+#### 1. P2P 点对点设备发现原理
+
+系统将设备发现划分为**服务级物理网络发现**与**端侧浏览器节点拓扑发现**两个层次：
+
+- **底层服务级发现 (UDP 广播信标 + mDNS)**：
+  - **主动广播 (Announce)**：后台 `UdpDiscoveryService` 监听 `0.0.0.0:8089`，在服务冷启动或检测到物理网卡 IP 切换时，主动向局域网广播地址 `255.255.255.255:8089` 发射 `LIGHTDROP_ANNOUNCE` 报文，广播当前服务实例 ID、IP、端口及 Bonjour 域名；
+  - **被动嗅探应答 (Probe Response)**：持续监听局域网内客户端或节点发出的探测请求（包含 `DISCOVER`、`PING`、`SCAN`、`QUERY`），单播回复包含服务元信息的 `LIGHTDROP_PONG`；
+  - **防风暴与防回路设计**：每个服务进程生成唯一 `instanceId`，绝对丢弃自身回环报文；配置同 IP 客户端 500ms 响应限流与 5 秒 TTL 网卡接口缓存，杜绝网络风暴与高频系统调用消耗 CPU。
+- **端侧浏览器节点拓扑发现 (WebSocket Hub)**：
+  - **稳定设备指纹**：客户端在 `localStorage` 持久化生成全局唯一且跨刷新稳定的 `deviceId`（格式形如 `node_<timestamp>_<random>`），并绑定当前设备的操作系统、浏览器标识、角色昵称与专属头像色彩；
+  - **入网自声明 (`PEER_REGISTER`)**：浏览器建立 WebSocket 连接后，立即上报 `PEER_REGISTER`。服务端提取客户端真实底层局域网 IP (`clientIp`) 注入节点元数据；
+  - **全量单播 + 增量广播拓扑模型**：
+    - **全量单播**：服务端仅向新上线节点单播下发当前所有在线设备列表（`PEER_ONLINE_LIST`，排除自身），避免全网组播；
+    - **增量广播**：服务端向其他在线节点轻量通知新节点加入（`PEER_JOINED`），节点改名或进入接收模式时通知 `PEER_UPDATED`，节点掉线通过 30s 心跳探活感知后广播 `PEER_LEFT`。全网拓扑数据传输维持在微秒级与数十字节级别。
+
+#### 2. 连接建立与信令协商机制
+
+P2P 传输建立前，系统通过双段握手、信令单播转发与超时自动降级机制确保连接安全与 100% 可达：
+
+- **会话模型与握手协议**：
+  - **轻量单次传输握手**：发送方发送 `HANDSHAKE_REQUEST`，携带文件列表、预览文本、总数据量及发送方指纹；接收方弹出接收卡片，支持**接受 / 拒绝 / 忙碌**响应（`HANDSHAKE_RESPONSE`）；
+  - **互信长连接会话 (Persistent Session)**：双方可申请建立长期互信直通会话（`SESSION_REQUEST` -> `SESSION_ESTABLISHED`），会话存续期间支持**免二次确认极速直传**，以及专属的 **0-RTT 极速单向文本直发 (`SESSION_DIRECT_TEXT`)**；
+  - **绝对单播信令中继**：所有会话握手、SDP Offer/Answer 及 ICE Candidates 均封装为 `P2P_DIRECT_MESSAGE`，服务端严格按照 `targetDeviceId` 单播投递，服务端仅做内存透明转发，完全不触碰无关设备。
+- **1.2 秒双轨自适应通道协商**：
+  - 协商阶段首先尝试初始化 WebRTC `RTCPeerConnection`，配置公网 STUN 候选集并创建 DataChannel（`ordered: true`，二进制传输类型 `arraybuffer`）；
+  - **握手超时保护**：设立 1200ms 的局域网直连打洞等待窗口。若 1.2 秒内 DataChannel 打开成功，锁定 `webrtc` 极速直连模式（强制 DTLS/SCTP 加密，跑满局域网千兆/万兆带宽）；若处于跨子网隔离、对称 NAT 或企业防火墙严禁 UDP 端口导致超时，**无缝平滑降级至 `relay` 模式**（通过已有 WebSocket 管道实现内存流式中继），确保极端网络环境下的 100% 成功交付。
+
+#### 3. 高性能双轨传输与流控实现
+
+为应对大文件、海量数据互传中的内存抖动、网卡拥塞与卡顿问题，P2P 引擎设计了严格的流控流水线：
+
+- **64KB 流式分片 (Streaming Chunking)**：
+  - 文件读取完全摒弃整文件载入内存的方式，采用 `File.slice(offset, offset + 64KB)` 步进分块流式读取为 `ArrayBuffer`；
+  - 在 WebRTC 通道下原生投递二进制分片；在 Relay 通道下以内存 Base64 分片走 WebSocket 单播中继。
+- **严格的双向背压控制 (Backpressure Control)**：
+  - **WebRTC 背压**：持续监控 DataChannel 缓冲区水位 `dc.bufferedAmount`，当堆积超过 1MB 阈值时立即挂起读取，等待底层网卡排空并触发 `onbufferedamountlow`（唤醒水位 256KB）后再恢复调度；
+  - **WebSocket 背压**：实时探测底层的 `activeWs.bufferedAmount`，当积压超过 512KB 时挂起循环执行 `waitForWsDrain` 等待网络冲刷；
+  - 双端内存占用始终恒定在 **< 2MB**，彻底杜绝大文件传输导致浏览器页面卡死或标签页崩溃 (OOM)。
+- **网卡级真实出站速率测算**：
+  - 计算传输进度与瞬时速度时，系统严格扣除本地套接字出站缓冲区中暂存滞留的数据量（`actualDeliveredBytes = transferredBytes - buffered`），杜绝“数据还在本地内存就提前显示 100%”的虚假进度。
+- **双端确认与落盘强同步 (ACK-driven Reliability)**：
+  - 传输期间接收端每 300ms 或每接收 256KB 向发送端节流回传已收到的真实字节数（`TRANSFER_ACK`），双端进度毫秒级精准对齐；
+  - **关键完成握手**：发送端在全部数据发出后，进度最高停留在 99%；接收端必须在组装全部二进制分片、校验无误并写入存储后，回传 `TRANSFER_COMPLETE_ACK` 确认，发送端收到后才正式触发 100% 完成回调，从协议层杜绝单侧假死。
+
+#### 4. P2P 资源存储与无服务器管理方案
+
+LightDrop P2P 传输彻底贯彻**「零服务端依赖与数据绝对留存本地」**的隐私哲学：
+
+- **零服务端物理落盘 (Zero-Server-Disk-Retention)**：
+  - P2P 直传产生的所有文件实体与私密文本**完全不经过服务端的物理磁盘**（绝不写入服务端 `data/files/` 物理目录与 `records.json` 索引库），服务端数据库无任何明文记录，物理隔绝服务端窥探。
+- **前端双层混合持久化存储 (Hybrid Local Persistence)**：
+  - **轻量元数据层 (`localStorage`)**：存储 P2P 传输历史摘要（`lightdrop_p2p_records`，包含传输 ID、对端昵称、角色头像、时间戳、文件列表及体积），与服务端公共共享记录无缝聚合在同一个数据表格中展示，附带显式 `P2P` 专有徽标；
+  - **二进制实体层 (`IndexedDB`)**：文件传输完成（`completeP2PRecord`）后，接收端将二进制文件 Blob 自动持久化写入浏览器独立的 IndexedDB（数据库名 `LightDrop_P2P_DB`，对象仓库 `blobs`，键名 `${recordId}_${fileIndex}`），彻底突破 `localStorage` 5MB 的存储容量限制，安全承载数百 MB 乃至 GB 级文件的离线安全留存。
+- **无服务极速提取与下载 (Zero-Network Blob Export)**：
+  - 用户在记录表格中点击“下载”或“查看”P2P 记录时，数据层（`useRecords`）检测到 `isP2P` 属性，直接通过 `getP2PRecordBlob()` 从本地 IndexedDB 读取 Blob，并通过 `URL.createObjectURL` 唤起浏览器原生安全保存；**全程消耗 0 外部网络带宽、0 服务端资源负载**。
+- **原子级生命周期管理**：
+  - **级联删除**：删除单条 P2P 记录时，原子同步清理 `localStorage` 索引元数据及关联的全部 `IndexedDB` 物理文件分片；
+  - **一键清空**：支持在表格批量清理时一键排空所有本地 P2P 缓存（`clearAllLocalP2PRecords`）；
+  - **隐私隔离**：在浏览器无痕/隐身模式或手动清空站点数据时自动全量销毁，不留任何持久化物理痕迹。
+
+### 📚 架构与技术设计文档导航
+
+为了方便开发者和架构师深入掌握 LightDrop 的底层架构与交互协议，项目在 [`docs/`](./docs) 目录下维护了专项技术设计全景文档：
+
+| 专题技术文档 | 语言版本 | 核心覆盖范围 |
+| :--- | :--- | :--- |
+| 📘 **系统整体技术架构与详细设计** | [简体中文](./docs/architecture.md) · [English](./docs/architecture_EN.md) | 全栈分层拓扑、No-DB 原子覆写引擎、WebSocket 连接池、局域网 IP 自愈感知、企业安全白名单与权限模型 |
+| 🚀 **P2P 点对点传输与资源存储技术设计** | [简体中文](./docs/p2p-design.md) · [English](./docs/p2p-design_EN.md) | 两层设备发现机制、WebRTC/Relay 1.2s 双轨竞速、64KB 背压流控流水线、IndexedDB 零落盘隐私持久化 |
+| 🛠️ **远端服务器部署与测试缺陷报告** | [缺陷复盘报告](./docs/bug.md) | 真实 Ubuntu 生产服务器全覆盖压测、多环境 Shell 脚本兼容性诊断与 12 项高危缺陷修复复盘 |
 
 ### 目录结构组织
 

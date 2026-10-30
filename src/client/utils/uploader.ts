@@ -22,8 +22,11 @@ export function uploadWithProgress(
   onProgress?: (info: UploadProgressInfo) => void
 ): UploadTaskHandle {
   const xhr = new XMLHttpRequest();
-  let startTime = Date.now();
+  const startTime = Date.now();
   let lastLoaded = 0;
+  let lastTime = Date.now();
+  let smoothedSpeed = 0;
+  let speedText = '';
 
   const promise = new Promise<any>((resolve, reject) => {
     xhr.open('POST', url, true);
@@ -34,21 +37,33 @@ export function uploadWithProgress(
       }
     } catch (_) {}
 
-    // 监听上传进度
+    // 监听上传进度 (采用 300ms 滑动窗口及指数加权移动平均 EWMA，准确计算实时瞬时传输速率)
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
         const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
         const now = Date.now();
-        const durationSec = (now - startTime) / 1000;
-        let speedText = '';
+        const intervalSec = (now - lastTime) / 1000;
 
-        if (durationSec > 0.5) {
-          const bytesPerSec = (event.loaded - lastLoaded) / durationSec;
-          if (bytesPerSec > 1024 * 1024) {
-            speedText = `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`;
-          } else if (bytesPerSec > 1024) {
-            speedText = `${(bytesPerSec / 1024).toFixed(0)} KB/s`;
-          }
+        // 间隔超过 0.3 秒更新一次瞬时速率
+        if (intervalSec >= 0.3) {
+          const deltaLoaded = event.loaded - lastLoaded;
+          const instantSpeed = deltaLoaded / intervalSec;
+
+          // 指数平滑：70% 历史平滑值 + 30% 最新瞬时值
+          smoothedSpeed = smoothedSpeed === 0 ? instantSpeed : smoothedSpeed * 0.7 + instantSpeed * 0.3;
+          lastLoaded = event.loaded;
+          lastTime = now;
+        }
+
+        // 首个 300ms 窗口前，使用从启动以来的平均值作为初值
+        const activeSpeed = smoothedSpeed > 0 ? smoothedSpeed : event.loaded / ((now - startTime) / 1000 || 1);
+
+        if (activeSpeed >= 1024 * 1024) {
+          speedText = `${(activeSpeed / (1024 * 1024)).toFixed(1)} MB/s`;
+        } else if (activeSpeed >= 1024) {
+          speedText = `${(activeSpeed / 1024).toFixed(0)} KB/s`;
+        } else if (activeSpeed > 0) {
+          speedText = `${Math.round(activeSpeed)} B/s`;
         }
 
         onProgress({

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Header } from './components/Header';
 import { SendCard } from './components/SendCard';
@@ -8,8 +8,12 @@ import { Footer } from './components/Footer';
 import { SettingsModal } from './components/SettingsModal';
 import { QrCodeModal } from './components/QrCodeModal';
 import { DownloadModal } from './components/DownloadModal';
+import { P2PReceiveModal } from './components/P2PReceiveModal';
+import { P2PSessionRequestModal } from './components/P2PSessionRequestModal';
+import { P2PSessionManagerModal } from './components/P2PSessionManagerModal';
 import { useRecords } from './hooks/useRecords';
 import { useWebSocket } from './hooks/useWebSocket';
+import { useP2P } from './hooks/useP2P';
 import { ShareItem, WsMessage } from '@shared/types';
 import { X } from 'lucide-react';
 import { sendDesktopNotification } from './utils/desktopNotification';
@@ -47,8 +51,49 @@ export const App: React.FC = () => {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
+  const [sessionManagerOpen, setSessionManagerOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [incomingToast, setIncomingToast] = useState<string | null>(null);
+
+  const handleP2PToast = useCallback((type: 'success' | 'error' | 'info', text: string) => {
+    setIncomingToast(text);
+    setTimeout(() => setIncomingToast(null), 4000);
+  }, []);
+
+  const {
+    onlinePeers,
+    favoritePeers,
+    activeSessions,
+    activeSession,
+    establishSession,
+    disconnectSession,
+    disconnectAllSessions,
+    incomingSessionRequests,
+    incomingSessionRequest,
+    acceptSessionRequest,
+    rejectSessionRequest,
+    acceptAllSessionRequests,
+    rejectAllSessionRequests,
+    tasks,
+    outgoingTransfer,
+    incomingRequest,
+    incomingTransfer,
+    startP2PTransfer,
+    cancelTransfer,
+    cancelOutgoingTransfer,
+    acceptIncomingTransfer,
+    rejectIncomingTransfer,
+    dismissOutgoingTransfer,
+    dismissIncomingTransfer,
+    toggleFavorite,
+    updateFavoriteName,
+    isReceiveMode,
+    toggleReceiveMode,
+    handleP2PWsMessage,
+  } = useP2P(handleP2PToast);
+
+  const handleP2PWsMessageRef = useRef(handleP2PWsMessage);
+  handleP2PWsMessageRef.current = handleP2PWsMessage;
 
   // 本机下载目录弹窗与保存状态
   const [downloadModalItem, setDownloadModalItem] = useState<{
@@ -120,6 +165,44 @@ export const App: React.FC = () => {
   // 接收 WebSocket 广播消息，实时长连接推送
   const handleWsMessage = useCallback(
     (msg: WsMessage) => {
+      // 优先拦截与处理 P2P 相关的单播信令与设备在线感知事件
+      if (
+        msg.type === 'PEER_ONLINE_LIST' ||
+        msg.type === 'PEER_JOINED' ||
+        msg.type === 'PEER_UPDATED' ||
+        msg.type === 'PEER_LEFT' ||
+        msg.type === 'P2P_DIRECT_MESSAGE'
+      ) {
+        handleP2PWsMessageRef.current(msg);
+
+        // 如果是外部发起长连接请求，提供系统桌面通知
+        if (
+          msg.type === 'P2P_DIRECT_MESSAGE' &&
+          (msg.payload?.messageType === 'SESSION_REQUEST' || msg.payload?.messageType === 'SESSION_ESTABLISH') &&
+          msg.payload?.payload?.sender
+        ) {
+          sendDesktopNotification({
+            title: 'LightDrop · 收到 P2P 长连接请求',
+            body: `${msg.payload.payload.sender.nickname} 请求与您建立 P2P 长连接会话`,
+            tag: `lightdrop_session_${Date.now()}`,
+          });
+        }
+
+        // 如果是外部发起握手请求，提供系统桌面通知
+        if (
+          msg.type === 'P2P_DIRECT_MESSAGE' &&
+          msg.payload?.messageType === 'HANDSHAKE_REQUEST' &&
+          msg.payload?.payload?.sender
+        ) {
+          sendDesktopNotification({
+            title: 'LightDrop · 收到 P2P 直传握手请求',
+            body: `${msg.payload.payload.sender.nickname} 请求向您传输内容`,
+            tag: `lightdrop_p2p_${Date.now()}`,
+          });
+        }
+        return;
+      }
+
       if (msg.type === 'ITEM_CREATED') {
         fetchRecords();
         fetchStats();
@@ -180,7 +263,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f4f9] p-3 sm:p-6 lg:p-8 flex flex-col justify-between selection:bg-blue-100 selection:text-blue-900 relative">
+    <div className="min-h-screen bg-[#f0f4f9] p-3 sm:p-6 lg:p-8 pb-[max(1rem,env(safe-area-inset-bottom))] flex flex-col justify-between selection:bg-blue-100 selection:text-blue-900 relative">
       {/* 局域网主动推送悬浮提示 (全视口精准居中) */}
       {incomingToast && (
         <div className="fixed top-5 inset-x-0 z-50 flex justify-center pointer-events-none px-4">
@@ -211,6 +294,12 @@ export const App: React.FC = () => {
           onOpenQrCode={() => setQrCodeOpen(true)}
           isRefreshing={isRefreshing}
           isConnected={isConnected}
+          isReceiveMode={isReceiveMode}
+          onToggleReceiveMode={toggleReceiveMode}
+          activeSession={activeSession}
+          activeSessions={activeSessions}
+          onDisconnectSession={disconnectSession}
+          onOpenSessionManager={() => setSessionManagerOpen(true)}
         />
 
         {/* 长连接断开智能重连与 IP 变动恢复条 */}
@@ -252,6 +341,19 @@ export const App: React.FC = () => {
               onUploadFiles={uploadFiles}
               onUploadFolder={uploadFolder}
               onUploadMixedBatch={uploadMixedBatch}
+              onlinePeers={onlinePeers}
+              favoritePeers={favoritePeers}
+              onStartP2PTransfer={startP2PTransfer}
+              outgoingTransfer={outgoingTransfer}
+              onCancelP2PTransfer={cancelOutgoingTransfer}
+              onDismissOutgoingTransfer={dismissOutgoingTransfer}
+              onToggleFavorite={toggleFavorite}
+              onUpdateFavoriteName={updateFavoriteName}
+              activeSession={activeSession}
+              activeSessions={activeSessions}
+              onEstablishSession={establishSession}
+              onDisconnectSession={disconnectSession}
+              onOpenSessionManager={() => setSessionManagerOpen(true)}
             />
           </div>
 
@@ -287,6 +389,7 @@ export const App: React.FC = () => {
           onClearAll={clearAllRecords}
           verifyPassword={verifyPassword}
           onCopyShareLink={copyShareLink}
+          onCancelP2PTask={cancelTransfer}
         />
 
         {/* 底部状态栏 */}
@@ -321,6 +424,34 @@ export const App: React.FC = () => {
         password={downloadModalItem?.password}
         onClose={() => setDownloadModalItem(null)}
         onSuccess={handleDownloadSuccess}
+      />
+
+      {/* P2P 接收模式确认与传输弹窗 */}
+      <P2PReceiveModal
+        request={incomingRequest}
+        transfer={incomingTransfer}
+        onAccept={acceptIncomingTransfer}
+        onReject={rejectIncomingTransfer}
+        onDismiss={dismissIncomingTransfer}
+      />
+
+      {/* P2P 长连接互信请求确认弹窗 (支持队列与批量处理) */}
+      <P2PSessionRequestModal
+        request={incomingSessionRequest}
+        requests={incomingSessionRequests}
+        onAccept={acceptSessionRequest}
+        onReject={rejectSessionRequest}
+        onAcceptAll={acceptAllSessionRequests}
+        onRejectAll={rejectAllSessionRequests}
+      />
+
+      {/* P2P 多端长连接会话集中管理弹窗 */}
+      <P2PSessionManagerModal
+        isOpen={sessionManagerOpen}
+        onClose={() => setSessionManagerOpen(false)}
+        activeSessions={activeSessions}
+        onDisconnectSession={disconnectSession}
+        onDisconnectAllSessions={disconnectAllSessions}
       />
     </div>
   );

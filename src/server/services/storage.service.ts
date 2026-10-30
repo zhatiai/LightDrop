@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import { pipeline } from 'stream/promises';
 import archiver from 'archiver';
 import { configManager } from '../config/config.manager.js';
 import { STORAGE_FILES_DIRNAME, STORAGE_RECORDS_FILENAME, STORAGE_SETTINGS_FILENAME } from '../../shared/constants.js';
@@ -15,6 +17,77 @@ export class StorageService {
       fs.mkdirSync(filesDir, { recursive: true });
     }
     return filesDir;
+  }
+
+  /**
+   * 获取与文件存储根路径同分区的临时上传目录 (确保跨文件移动为 0 毫秒原子 rename)
+   */
+  public getTempUploadDir(): string {
+    try {
+      const baseDir = configManager.getSettings().storageDir;
+      const tempDir = path.join(baseDir, '.temp-uploads');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      return tempDir;
+    } catch {
+      const fallback = path.join(os.tmpdir(), 'lightdrop-temp-uploads');
+      if (!fs.existsSync(fallback)) {
+        fs.mkdirSync(fallback, { recursive: true });
+      }
+      return fallback;
+    }
+  }
+
+  /**
+   * 安全、高性能地将临时上传文件移动至正式记录目录
+   * 优先尝试原子 rename（同分区 0 毫秒极速移动，零额外磁盘读写），跨设备时自动降级为异步流式复制并清理源文件
+   */
+  public async moveUploadedFile(sourcePath: string, targetPath: string): Promise<void> {
+    const targetDir = path.dirname(targetPath);
+    if (!fs.existsSync(targetDir)) {
+      await fs.promises.mkdir(targetDir, { recursive: true });
+    }
+
+    try {
+      await fs.promises.rename(sourcePath, targetPath);
+    } catch (err: any) {
+      if (err.code === 'EXDEV' || err.code === 'EACCES' || err.code === 'EBUSY') {
+        // 跨设备挂载或权限问题，使用异步非阻塞管道流复制，不阻塞主线程
+        const readStream = fs.createReadStream(sourcePath);
+        const writeStream = fs.createWriteStream(targetPath);
+        await pipeline(readStream, writeStream);
+        try {
+          await fs.promises.unlink(sourcePath);
+        } catch (_) {}
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  /**
+   * 定期清理临时上传目录中的孤儿或残留碎片文件（默认清理 > 1 小时的文件）
+   */
+  public cleanTempUploads(maxAgeMs: number = 60 * 60 * 1000): number {
+    let cleanedCount = 0;
+    try {
+      const tempDir = this.getTempUploadDir();
+      if (!fs.existsSync(tempDir)) return 0;
+      const now = Date.now();
+      const files = fs.readdirSync(tempDir);
+      for (const file of files) {
+        const fullPath = path.join(tempDir, file);
+        try {
+          const stat = fs.statSync(fullPath);
+          if (stat.isFile() && now - stat.mtimeMs > maxAgeMs) {
+            fs.unlinkSync(fullPath);
+            cleanedCount++;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return cleanedCount;
   }
 
   /**

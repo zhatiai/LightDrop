@@ -5,23 +5,16 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { configManager } from '../config/config.manager.js';
+import { storageService } from '../services/storage.service.js';
 
-// 临时上传缓冲目录
-const tempUploadDir = path.join(os.tmpdir(), 'lightdrop-temp-uploads');
-if (!fs.existsSync(tempUploadDir)) {
-  fs.mkdirSync(tempUploadDir, { recursive: true });
-}
-
-// 严谨的磁盘存储：临时文件完全使用随机哈希命名，彻底避免原始文件名中的任何路径穿越、斜杠、换行符引发 ENOENT
+// 严谨的磁盘存储：将临时文件存储在与 storageDir 相同的分区，确保后续落地为 0 毫秒原子 rename
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     try {
-      if (!fs.existsSync(tempUploadDir)) {
-        fs.mkdirSync(tempUploadDir, { recursive: true });
-      }
-      cb(null, tempUploadDir);
+      const tempDir = storageService.getTempUploadDir();
+      cb(null, tempDir);
     } catch (err: any) {
-      cb(err, tempUploadDir);
+      cb(err, os.tmpdir());
     }
   },
   filename: (req, file, cb) => {

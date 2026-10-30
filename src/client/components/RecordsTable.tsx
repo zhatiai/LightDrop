@@ -33,6 +33,10 @@ import {
   BarChart3,
   Tag,
   Paperclip,
+  Zap,
+  Loader2,
+  Radio,
+  XCircle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ShareItem, ShareItemType, SystemStats } from '@shared/types';
@@ -82,6 +86,7 @@ interface RecordsTableProps {
   onClearAll: (options?: ClearRecordsOptions) => Promise<any> | void;
   verifyPassword: (id: string, password: string) => Promise<string>;
   onCopyShareLink?: (id: string) => void;
+  onCancelP2PTask?: (transferId: string) => void;
 }
 
 export const RecordsTable: React.FC<RecordsTableProps> = ({
@@ -102,6 +107,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
   onClearAll,
   verifyPassword,
   onCopyShareLink,
+  onCancelP2PTask,
 }) => {
   const { t, i18n } = useTranslation();
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -513,6 +519,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
   // 点击条目进入详情界面
   const handleRowItemClick = (item: ShareItem) => {
     setHoverPreview(null);
+    if (item.isP2P && item.p2pStatus === 'transferring') return;
     if (item.type === 'text') {
       handleViewMarkdownClick(item);
     } else if (item.type === 'batch') {
@@ -621,6 +628,9 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
 
   // 渲染通用的“复制链接”与“二维码”下拉展开按钮 (全部类型通用)
   const renderActionDropdowns = (targetItem: ShareItem) => {
+    // P2P 直传记录仅存于当前浏览器本地缓存，不支持公网/局域网外部分享链接与二维码
+    if (targetItem.isP2P) return null;
+
     const isCopyOpen = activeDropdown?.id === targetItem.id && activeDropdown?.type === 'copy';
     const isQrOpen = activeDropdown?.id === targetItem.id && activeDropdown?.type === 'qr';
     const isCopied = copiedLinkId === targetItem.id;
@@ -923,8 +933,8 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
             <h2 className="text-sm font-bold text-slate-800 tracking-tight">{t('records.title')}</h2>
           </div>
 
-          {/* 分类 Tabs */}
-          <div className="flex items-center gap-1.5 bg-slate-100/70 p-1 rounded-xl">
+          {/* 分类 Tabs (移动端支持横向滑动，保证不折行挤压) */}
+          <div className="flex items-center gap-1.5 bg-slate-100/70 p-1 rounded-xl overflow-x-auto max-w-full custom-scrollbar whitespace-nowrap shrink-0">
             <button
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
@@ -1218,16 +1228,16 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
         </div>
       </div>
 
-      {/* 数据表格 */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[1040px]">
+      {/* 数据表格 (桌面端保留完整多列视图) */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[840px]">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60 text-[11px] font-medium text-slate-400 select-none whitespace-nowrap">
-              <th className="py-2.5 px-4 w-10 text-center shrink-0"></th>
-              <th className="py-2.5 px-3 w-24 shrink-0">{t('records.thType')}</th>
+              <th className="py-2.5 px-3 w-10 text-center shrink-0"></th>
+              <th className="py-2.5 px-2 w-20 shrink-0">{t('records.thType')}</th>
               <th
                 onClick={() => handleToggleHeaderSort('name')}
-                className="py-2.5 px-4 min-w-[200px] max-w-[420px] cursor-pointer hover:text-blue-600 transition group/th select-none"
+                className="py-2.5 px-3 min-w-[180px] max-w-[360px] cursor-pointer hover:text-blue-600 transition group/th select-none"
                 title={sortBy === 'name' ? (sortOrder === 'asc' ? t('records.sortNameDesc') : t('records.sortNameAsc')) : t('records.sortByName')}
               >
                 <div className="flex items-center gap-1.5">
@@ -1237,18 +1247,18 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
               </th>
               <th
                 onClick={() => handleToggleHeaderSort('size')}
-                className="py-2.5 px-3 w-24 shrink-0 cursor-pointer hover:text-blue-600 transition group/th select-none"
+                className="py-2.5 px-2 w-20 shrink-0 cursor-pointer hover:text-blue-600 transition group/th select-none text-right"
                 title={sortBy === 'size' ? (sortOrder === 'desc' ? t('records.sortSizeAsc') : t('records.sortSizeDesc')) : t('records.sortBySize')}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-end gap-1.5">
                   <span>{t('records.thSize', '大小')}</span>
                   {renderSortIndicator('size')}
                 </div>
               </th>
-              <th className="py-2.5 px-3 w-28 shrink-0 text-center">{t('records.thSender', '发送者')}</th>
+              <th className="py-2.5 px-2 w-24 shrink-0 text-center">{t('records.thSender', '发送者')}</th>
               <th
                 onClick={() => handleToggleHeaderSort('time')}
-                className="py-2.5 px-4 w-28 shrink-0 cursor-pointer hover:text-blue-600 transition group/th select-none"
+                className="py-2.5 px-3 w-24 shrink-0 cursor-pointer hover:text-blue-600 transition group/th select-none"
                 title={sortBy === 'time' ? (sortOrder === 'desc' ? t('records.sortTimeAsc') : t('records.sortTimeDesc')) : t('records.sortByTime')}
               >
                 <div className="flex items-center gap-1.5">
@@ -1256,8 +1266,8 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                   {renderSortIndicator('time')}
                 </div>
               </th>
-              <th className="py-2.5 px-4 w-32 shrink-0 text-center">{t('records.thPermission')}</th>
-              <th className="py-2.5 px-4 min-w-[390px] shrink-0 text-right">{t('records.thActions')}</th>
+              <th className="py-2.5 px-2 w-24 shrink-0 text-center">{t('records.thPermission')}</th>
+              <th className="py-2.5 px-4 shrink-0 text-right">{t('records.thActions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
@@ -1283,7 +1293,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     }`}
                   >
                     {/* 复选框 */}
-                    <td className="py-3 px-4 text-center shrink-0">
+                    <td className="py-3 px-3 text-center shrink-0">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -1293,7 +1303,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     </td>
 
                     {/* 类型 */}
-                    <td className="py-3 px-3 whitespace-nowrap shrink-0">
+                    <td className="py-3 px-2 whitespace-nowrap shrink-0">
                       <div
                         className={`flex items-center gap-1.5 whitespace-nowrap ${
                           isImageItem(item) || item.type === 'batch' || isDocPreviewable(item) ? 'cursor-pointer group/type' : ''
@@ -1354,18 +1364,36 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
 
                     {/* 内容 / 文件名 */}
                     <td
-                      className="py-3 px-4 min-w-[200px] max-w-[420px]"
+                      className="py-3 px-3 min-w-[180px] max-w-[360px]"
                       onMouseEnter={(e) => handleCellMouseEnter(item, e)}
                       onMouseLeave={handleCellMouseLeave}
                     >
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
+                          {item.isP2P && (
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${
+                                item.p2pStatus === 'transferring'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                                  : item.p2pStatus === 'failed'
+                                  ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                  : 'bg-blue-50 text-blue-600 border border-blue-200'
+                              }`}
+                            >
+                              <Zap className="w-2.5 h-2.5" />
+                              <span className="truncate max-w-[120px]">
+                                {item.p2pDirection === 'send'
+                                  ? `${t('p2p.badgeSendTo', '发给')} ${item.p2pPeerName || t('p2p.targetDevice', '设备')}`
+                                  : `${t('p2p.badgeReceiveFrom', '来自')} ${item.p2pPeerName || t('p2p.targetDevice', '设备')}`}
+                              </span>
+                            </span>
+                          )}
                           {item.isUrl ? (
                             <a
                               href={item.content}
                               target="_blank"
                               rel="noreferrer"
-                              className="font-medium text-blue-600 hover:underline flex items-center gap-1 truncate max-w-full"
+                              className="font-medium text-blue-600 hover:underline flex items-center gap-1 truncate min-w-0 flex-1"
                             >
                               <span className="truncate">{getTextDisplayTitle(item)}</span>
                               <ExternalLink className="w-3 h-3 shrink-0" />
@@ -1373,12 +1401,35 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                           ) : (
                             <span
                               onClick={() => handleRowItemClick(item)}
-                              className="font-medium text-slate-800 hover:text-blue-600 cursor-pointer truncate max-w-full"
+                              className={`font-medium truncate min-w-0 flex-1 ${
+                                item.isP2P && item.p2pStatus === 'transferring'
+                                  ? 'text-slate-800 cursor-default font-medium'
+                                  : 'text-slate-800 hover:text-blue-600 cursor-pointer'
+                              }`}
                             >
                               {getTextDisplayTitle(item)}
                             </span>
                           )}
                         </div>
+                        {/* 第二行：传输中显示极简流线型进度与速率；普通状态保留类型描述 */}
+                        {item.isP2P && item.p2pStatus === 'transferring' && (
+                          <div className="mt-1 flex items-center gap-2 min-w-0">
+                            <div className="w-24 sm:w-32 bg-blue-100/90 rounded-full h-1 overflow-hidden shrink-0">
+                              <div
+                                className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+                                style={{ width: `${Math.min(100, Math.max(0, item.p2pProgress || 0))}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-blue-600 font-mono font-medium shrink-0">
+                              {Math.round(item.p2pProgress || 0)}%
+                            </span>
+                            {item.p2pSpeed && (
+                              <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                · {item.p2pSpeed}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5 min-w-0">
                           <span className="truncate">
                             {item.type === 'text'
@@ -1405,12 +1456,12 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     </td>
 
                     {/* 大小 */}
-                    <td className="py-3 px-3 w-24 shrink-0 text-slate-600 whitespace-nowrap font-mono text-[11px] align-middle">
+                    <td className="py-3 px-2 w-20 shrink-0 text-slate-600 whitespace-nowrap font-mono text-[11px] text-right align-middle">
                       {formatBytes(item.fileSize)}
                     </td>
 
                     {/* 发送者 / 角色昵称 */}
-                    <td className="py-3 px-3 whitespace-nowrap shrink-0 text-center align-middle">
+                    <td className="py-3 px-2 whitespace-nowrap shrink-0 text-center align-middle">
                       <div className="flex items-center justify-center">
                         <span
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100/90 text-slate-700 border border-slate-200/60 max-w-[130px] truncate"
@@ -1425,16 +1476,24 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                     </td>
 
                     {/* 发送时间 */}
-                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap shrink-0">
+                    <td className="py-3 px-3 text-slate-500 whitespace-nowrap shrink-0">
                       {formatDisplayTime(item.createdAt)}
                     </td>
 
                     {/* 访问权限：优化为“局域网”与“密码”两种 */}
-                    <td className="py-3 px-4 whitespace-nowrap shrink-0 text-center align-middle">
+                    <td className="py-3 px-2 whitespace-nowrap shrink-0 text-center align-middle">
                       <div className="flex items-center justify-center">
-                        {item.hasPassword ? (
+                        {item.isP2P ? (
                           <span
-                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200/60 whitespace-nowrap"
+                            title={t('p2p.directPeerTitle', 'P2P直连传输，仅存于本机浏览器缓存')}
+                          >
+                            <Zap className="w-3 h-3 text-purple-600 shrink-0" />
+                            <span>{t('p2p.directTransfer', '点对点')}</span>
+                          </span>
+                        ) : item.hasPassword ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap"
                             title={t('records.pwdProtectedTitle')}
                           >
                             <Lock className="w-3 h-3 text-amber-600 shrink-0" />
@@ -1442,7 +1501,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                           </span>
                         ) : (
                           <span
-                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-600 border border-emerald-200/50 whitespace-nowrap"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-600 border border-emerald-200/50 whitespace-nowrap"
                             title={t('records.permLanTitle', '局域网内任意访客免密访问')}
                           >
                             <Globe className="w-3 h-3 shrink-0" />
@@ -1452,10 +1511,49 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                       </div>
                     </td>
 
-                    {/* 操作列：单行绝不折行 */}
-                    <td className="py-3 px-4 text-right whitespace-nowrap shrink-0 min-w-[390px]">
-                      <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
-                        {item.type === 'text' ? (
+                    {/* 操作列：单行绝不折行，末尾按钮绝对像素级右对齐 */}
+                    <td className="py-3 px-4 text-right whitespace-nowrap shrink-0">
+                      <div className="inline-flex items-center justify-end gap-1.5 whitespace-nowrap">
+                        {item.isP2P && item.p2pStatus === 'transferring' ? (
+                          <>
+                            <span className="text-xs text-blue-600 font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50/90 border border-blue-200/80 shadow-2xs">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500 shrink-0" />
+                              <span>{Math.round(item.p2pProgress || 0)}%</span>
+                              {item.p2pSpeed && <span className="text-[10px] text-slate-400">({item.p2pSpeed})</span>}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const tid = item.p2pTransferId || item.id;
+                                if (onCancelP2PTask) {
+                                  onCancelP2PTask(tid);
+                                }
+                              }}
+                              className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-medium transition active:scale-95 whitespace-nowrap shrink-0 shadow-2xs"
+                              title={t('p2p.cancelTransfer', '取消传输')}
+                            >
+                              <XCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>{t('common.cancel', '取消')}</span>
+                            </button>
+                          </>
+                        ) : item.isP2P && item.p2pStatus === 'failed' ? (
+                          <>
+                            <span className="text-xs text-rose-600 font-medium px-2 py-0.5 rounded-md bg-rose-50 border border-rose-100">
+                              {t('p2p.statusFailed', '传输中断')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => triggerDeleteOne(item)}
+                              className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-500 hover:text-rose-600 hover:bg-rose-100/80 border border-rose-100 text-[11px] font-medium transition active:scale-95 whitespace-nowrap shrink-0"
+                              title={t('records.tipDelete')}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>{t('records.delete')}</span>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {item.type === 'text' ? (
                           <>
                             {/* 查看 Markdown 内容 */}
                             <button
@@ -1569,7 +1667,9 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
                         >
                           <MoreHorizontal className="w-3.5 h-3.5 shrink-0" />
                         </button>
-                      </div>
+                      </>
+                    )}
+                  </div>
                     </td>
                   </tr>
                 );
@@ -1577,6 +1677,228 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* 移动端专用响应式卡片流 (在 < md 视口下无缝替代横向滚动表格) */}
+      <div className="block md:hidden divide-y divide-slate-100 bg-white">
+        {sortedRecords.length === 0 ? (
+          <div className="py-12 text-center text-slate-400">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                <Search className="w-5 h-5" />
+              </div>
+              <span className="text-xs">{t('records.emptySearch')}</span>
+            </div>
+          </div>
+        ) : (
+          sortedRecords.map((item) => {
+            const isSelected = selectedIds.has(item.id);
+            const isP2PTransferring = item.isP2P && item.p2pStatus === 'transferring';
+
+            return (
+              <div
+                key={`mobile-card-${item.id}`}
+                className={`p-3.5 transition ${
+                  isSelected ? 'bg-blue-50/40' : 'hover:bg-slate-50/60'
+                }`}
+              >
+                {/* 顶栏：复选框 + 类型图标 + 标签 + 权限徽章 + 时间 */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelect(item.id)}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer shrink-0"
+                    />
+                    <div
+                      className="flex items-center gap-1.5 shrink-0 text-slate-700 font-semibold text-xs cursor-pointer"
+                      onClick={() => handleRowItemClick(item)}
+                    >
+                      {getRecordIcon(item)}
+                      <span className="text-slate-700 font-semibold text-xs">
+                        {item.type === 'text'
+                          ? t('records.typeText')
+                          : item.type === 'image'
+                          ? t('records.typeImage')
+                          : item.type === 'folder'
+                          ? t('records.typeFolder')
+                          : item.type === 'batch'
+                          ? item.content
+                            ? t('records.typeWithAttachments', '图文附件')
+                            : t('records.typeBatch', '合辑文件')
+                          : t('records.typeFile')}
+                      </span>
+                    </div>
+
+                    {item.hasPassword && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded-full font-medium shrink-0">
+                        <Lock className="w-2.5 h-2.5 text-amber-600" />
+                        <span>加密</span>
+                      </span>
+                    )}
+
+                    {item.isP2P && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.2 rounded-full font-medium shrink-0">
+                        <Zap className="w-2.5 h-2.5 text-indigo-500 fill-current" />
+                        <span>P2P</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <span className="text-[11px] text-slate-400 shrink-0 font-mono">
+                    {formatDisplayTime(item.createdAt)}
+                  </span>
+                </div>
+
+                {/* 内容主体区 */}
+                <div className="mb-2.5 pl-6">
+                  {isP2PTransferring ? (
+                    <div className="space-y-1.5 bg-blue-50/50 p-2.5 rounded-xl border border-blue-100">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
+                        <span className="truncate">{item.fileName || item.title || '高速直传进行中'}</span>
+                        <span className="font-mono text-blue-600">{Math.round(item.p2pProgress || 0)}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-blue-600 h-full rounded-full transition-all duration-200"
+                          style={{ width: `${item.p2pProgress || 0}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>{item.p2pSpeed || '计算中...'}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const tid = item.p2pTransferId || item.id;
+                            if (onCancelP2PTask) onCancelP2PTask(tid);
+                          }}
+                          className="text-rose-600 font-medium hover:underline"
+                        >
+                          {t('common.cancel', '取消')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="cursor-pointer group/card"
+                      onClick={() => handleRowItemClick(item)}
+                    >
+                      {item.title && (
+                        <div className="text-xs font-bold text-slate-800 truncate mb-1 group-hover/card:text-blue-600 transition">
+                          {item.title}
+                        </div>
+                      )}
+                      {item.type === 'text' && item.content && (
+                        <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 line-clamp-2 font-mono break-all leading-relaxed">
+                          {item.content}
+                        </div>
+                      )}
+                      {item.type === 'file' && (
+                        <div className="text-xs text-slate-700 font-medium truncate flex items-center gap-1.5">
+                          <span className="truncate">{item.fileName || item.title}</span>
+                        </div>
+                      )}
+                      {item.type === 'batch' && (
+                        <div className="text-xs text-slate-600 font-medium truncate">
+                          <span>{item.files?.length || 0} 个文件</span>
+                          {item.content && <span className="text-slate-400 ml-1.5">({item.content.slice(0, 20)}...)</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 底栏：发送者 + 大小 + 快捷操作按钮组 */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 pl-6 text-xs">
+                  <div className="flex items-center gap-1.5 min-w-0 text-slate-400 text-[11px]">
+                    <span className="truncate max-w-[90px] text-slate-600 font-medium">
+                      {item.nickname || '匿名'}
+                    </span>
+                    <span>•</span>
+                    <span className="font-mono">{formatBytes(item.fileSize)}</span>
+                  </div>
+
+                  {/* 快捷操作按钮 */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {item.type === 'text' ? (
+                      <>
+                        <button
+                          onClick={() => handleViewMarkdownClick(item)}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                          title={t('records.view')}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleCopyClick(item)}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                          title={t('records.copy')}
+                        >
+                          {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </>
+                    ) : item.type === 'batch' ? (
+                      <>
+                        <button
+                          onClick={() => handleViewBatchClick(item)}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition"
+                          title={t('records.view')}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDownloadClick(item)}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                          title={t('records.downloadZip')}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {isImageItem(item) || isDocPreviewable(item) ? (
+                          <button
+                            onClick={() => handleRowItemClick(item)}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                            title={t('records.view')}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        ) : null}
+                        <button
+                          onClick={() => handleDownloadClick(item)}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                          title={t('records.download')}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+
+                    {/* 二维码分享入口 */}
+                    <button
+                      onClick={() => handleOpenItemQr(item, 'download')}
+                      className="p-1.5 text-slate-500 hover:text-purple-600 hover:bg-slate-100 rounded-lg transition"
+                      title={t('records.shareQr')}
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* 删除按钮 */}
+                    <button
+                      onClick={() => triggerDeleteOne(item)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      title={t('records.delete')}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* 文本/记录详情预览弹窗 */}

@@ -24,6 +24,11 @@ export class CleanupService {
   }
 
   public runCleanup(): number {
+    // 无论是否配置按天清理记录，均自动清理超过 1 小时的上传临时碎片与中断文件
+    try {
+      storageService.cleanTempUploads(60 * 60 * 1000);
+    } catch (_) {}
+
     const settings = configManager.getSettings();
     if (!settings.autoCleanupDays || settings.autoCleanupDays <= 0) {
       return 0;

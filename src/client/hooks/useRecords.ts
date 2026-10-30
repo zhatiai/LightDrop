@@ -1,12 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ShareItem, ShareItemType, SystemStats } from '@shared/types';
 import { copyToClipboard } from '../utils/clipboard';
 import { uploadWithProgress, UploadProgressInfo } from '../utils/uploader';
 import { getUserNickname } from '../utils/nickname';
+import {
+  getLocalP2PRecords,
+  deleteLocalP2PRecord,
+  clearAllLocalP2PRecords,
+  getP2PRecordBlob,
+  P2P_RECORDS_CHANGED_EVENT,
+} from '../utils/p2p/p2pRecordStorage';
 import i18n from '../i18n';
 
 export function useRecords() {
   const [records, setRecords] = useState<ShareItem[]>([]);
+  const [p2pRecords, setP2pRecords] = useState<ShareItem[]>(() => getLocalP2PRecords());
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | ShareItemType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,6 +69,23 @@ export function useRecords() {
     fetchRecords();
     fetchStats();
   }, [fetchRecords, fetchStats]);
+
+  // 监听本地 P2P 传输记录变更事件 (双向秒级同步)
+  useEffect(() => {
+    const handleP2PChange = () => {
+      setP2pRecords(getLocalP2PRecords());
+    };
+    window.addEventListener(P2P_RECORDS_CHANGED_EVENT, handleP2PChange);
+    return () => window.removeEventListener(P2P_RECORDS_CHANGED_EVENT, handleP2PChange);
+  }, []);
+
+  // 将公共看板记录与本地 P2P 记录合并，并严格按真实时间倒序排序
+  const allRecords = useMemo(() => {
+    const merged = [...records, ...p2pRecords];
+    return merged.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [records, p2pRecords]);
 
   // 发送纯文本/代码/链接 (支持可选密码与昵称)
   const sendText = async (content: string, title?: string, password?: string) => {
@@ -316,8 +341,28 @@ export function useRecords() {
     } catch (_) {}
   };
 
-  // 下载文件/打包下载文件夹 (支持密码与操作人昵称)
-  const downloadRecord = (item: ShareItem, password?: string) => {
+  // 下载文件/打包下载文件夹 (支持密码、P2P 本地存储提取与操作人昵称)
+  const downloadRecord = async (item: ShareItem, password?: string) => {
+    // 若为本地 P2P 记录，直接从 IndexedDB 取出二进制 Blob 触发下载，不走服务器
+    if (item.isP2P) {
+      try {
+        const blob = await getP2PRecordBlob(item.id, 0);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = item.fileName || item.title;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          return;
+        }
+      } catch (err) {
+        console.warn('Failed to download local P2P blob:', err);
+      }
+    }
+
     const nickname = getUserNickname();
     const params = new URLSearchParams();
     if (password) params.set('password', password);
@@ -326,8 +371,18 @@ export function useRecords() {
     window.location.href = `/api/records/${item.id}/download${queryString}`;
   };
 
-  // 删除单条
+  // 删除单条 (区分局域网服务器记录与本地 P2P 缓存记录)
   const deleteRecord = async (id: string) => {
+    if (id.startsWith('p2p_')) {
+      await deleteLocalP2PRecord(id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      return;
+    }
+
     const nickname = getUserNickname();
     const res = await fetch(`/api/records/${id}`, {
       method: 'DELETE',
@@ -345,29 +400,38 @@ export function useRecords() {
     }
   };
 
-  // 批量删除
+  // 批量删除 (区分 P2P 本地记录与远程记录)
   const deleteBatch = async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
 
-    const nickname = getUserNickname();
-    const res = await fetch('/api/records/batch-delete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-nickname': encodeURIComponent(nickname),
-      },
-      body: JSON.stringify({ ids }),
-    });
-    const json = await res.json();
-    if (json.success) {
-      setRecords((prev) => prev.filter((r) => !selectedIds.has(r.id)));
-      setSelectedIds(new Set());
-      fetchStats();
+    const p2pIds = ids.filter((id) => id.startsWith('p2p_'));
+    const remoteIds = ids.filter((id) => !id.startsWith('p2p_'));
+
+    for (const pid of p2pIds) {
+      await deleteLocalP2PRecord(pid);
     }
+
+    if (remoteIds.length > 0) {
+      const nickname = getUserNickname();
+      const res = await fetch('/api/records/batch-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-nickname': encodeURIComponent(nickname),
+        },
+        body: JSON.stringify({ ids: remoteIds }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setRecords((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+      }
+    }
+    setSelectedIds(new Set());
+    fetchStats();
   };
 
-  // 一键清空 / 指定条件清理
+  // 一键清空 / 指定条件清理 (同时清理公共服务器记录与本地 P2P 记录)
   const clearAllRecords = async (options?: {
     mode?: 'all' | 'by_time';
     timeMode?: 'relative' | 'before_date';
@@ -375,6 +439,9 @@ export function useRecords() {
     relativeUnit?: 'week' | 'month';
     beforeDate?: string;
   }) => {
+    // 优先清空全部本地 P2P 缓存与 IndexedDB 文件
+    await clearAllLocalP2PRecords();
+
     const payload = options || { mode: 'all' };
     const nickname = getUserNickname();
     const res = await fetch('/api/records/clear-all', {
@@ -401,8 +468,8 @@ export function useRecords() {
     }
   };
 
-  // 过滤后的记录
-  const filteredRecords = records.filter((item) => {
+  // 过滤后的记录 (作用于合并后的 allRecords，并严格按实际创建时间排序)
+  const filteredRecords = allRecords.filter((item) => {
     if (activeTab !== 'all') {
       if (activeTab === 'image' && item.type === 'batch' && item.isImageBatch) {
         // 图片合辑在图片标签页下也展示
@@ -422,7 +489,8 @@ export function useRecords() {
       const matchSubFiles = item.files ? item.files.some((f) => f.name.toLowerCase().includes(q)) : false;
       const matchSender =
         (item.senderName && item.senderName.toLowerCase().includes(q)) ||
-        (item.nickname && item.nickname.toLowerCase().includes(q));
+        (item.nickname && item.nickname.toLowerCase().includes(q)) ||
+        (item.p2pPeerName && item.p2pPeerName.toLowerCase().includes(q));
       return matchTitle || matchContent || matchFile || matchSubFiles || Boolean(matchSender);
     }
     return true;
@@ -451,11 +519,11 @@ export function useRecords() {
   };
 
   // 最近发送的文本与文件
-  const latestText = records.find((r) => r.type === 'text');
-  const latestFile = records.find((r) => r.type === 'file' || r.type === 'folder' || r.type === 'image');
+  const latestText = allRecords.find((r) => r.type === 'text');
+  const latestFile = allRecords.find((r) => r.type === 'file' || r.type === 'folder' || r.type === 'image');
 
   return {
-    records,
+    records: allRecords,
     filteredRecords,
     loading,
     stats,
