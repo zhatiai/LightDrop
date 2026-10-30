@@ -6,7 +6,7 @@ let cachedLocalHostName: string | null = null;
 let cachedLocalHostNameTime = 0;
 
 /**
- * 获取设备在局域网中的 mDNS / Bonjour 广播主机名 (如 'loner-3')
+ * 获取设备在局域网中的 mDNS / Bonjour 广播主机名 (如 'my-macbook')
  * macOS 下优先获取系统的 LocalHostName，支持 .local 域名全网解析
  */
 export function getLocalHostName(): string {
@@ -46,7 +46,7 @@ export function getLocalHostName(): string {
 }
 
 /**
- * 获取 Bonjour / mDNS 完整域名 (如 'loner-3.local')
+ * 获取 Bonjour / mDNS 完整域名 (如 'my-macbook.local')
  */
 export function getBonjourHost(): string {
   const name = getLocalHostName();
@@ -54,7 +54,7 @@ export function getBonjourHost(): string {
 }
 
 /**
- * 获取 Bonjour 完整访问地址 (如 'http://loner-3.local:8080')
+ * 获取 Bonjour 完整访问地址 (如 'http://my-macbook.local:8080')
  */
 export function getBonjourUrl(port: number = 8080, protocol: string = 'http'): string {
   return `${protocol}://${getBonjourHost()}:${port}`;

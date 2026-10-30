@@ -64,7 +64,7 @@ export interface ShareItem {
 export interface NetworkIpInfo {
   name: string;        // 网卡接口名称，如 'en0', 'en5' 或 'bonjour'
   ip: string;          // IPv4 地址或局域网主机名
-  url: string;         // 完整访问地址，如 'http://192.168.206.146:8080'
+  url: string;         // 完整访问地址，如 'http://192.168.1.100:8080'
   isDefault: boolean;  // 是否为系统推荐的默认IP
   isBonjour?: boolean; // 是否为 mDNS / Bonjour 局域网稳定域名 (.local)
 }
@@ -86,8 +86,8 @@ export interface SystemStats {
   uptimeSeconds: number;
   ipList?: NetworkIpInfo[];
   defaultUrl?: string;
-  bonjourHost?: string;        // 如 'loner-3.local'
-  bonjourUrl?: string;         // 如 'http://loner-3.local:8080'
+  bonjourHost?: string;        // 如 'my-macbook.local'
+  bonjourUrl?: string;         // 如 'http://my-macbook.local:8080'
   localHostName?: string;      // 本地主机名
   udpDiscoveryPort?: number;   // UDP 发现服务端口
 }
