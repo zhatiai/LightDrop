@@ -7,12 +7,12 @@
 </p>
 
 <p align="center">
-  <strong>现代化、极简、高隐私的局域网跨设备文件与文本共享服务</strong><br>
-  无需公网中转 · 零外部数据库 · 纯 TypeScript 全栈 · PWA 原生支持 · 原生 Mermaid 图表渲染 · 毫秒级实时同步
+  <strong>Modern, Minimalist, Privacy-First Local Network (LAN) File & Text Sharing Service</strong><br>
+  Zero Cloud Relays · No External Database · 100% Full-Stack TypeScript · Native PWA Ready · Native Mermaid Diagram Engine · Sub-Second WebSocket Sync
 </p>
 
 <p align="center">
-  <a href="./README.md">简体中文</a> | <a href="./README_EN.md">English</a>
+  <a href="./README.md">English</a> | <a href="./README_ZH.md">简体中文</a>
 </p>
 
 <p align="center">
@@ -27,170 +27,166 @@
 
 ---
 
-## 📖 目录
+## 📖 Table of Contents
 
-- [💡 项目亮点](#-项目亮点)
-- [🌟 核心功能特性](#-核心功能特性)
-  - [1. 📝 沉浸式 Markdown 阅读器与 Mermaid 图表引擎](#1--沉浸式-markdown-阅读器与-mermaid-图表引擎)
-  - [2. 📁 多文件、文件夹递归压缩与图文合辑](#2--多文件文件夹递归压缩与图文合辑)
-  - [3. 🔒 权限模式与安全解密体验](#3--权限模式与安全解密体验)
-  - [4. 🔗 独立提取页与免密直达链接](#4--独立提取页与免密直达链接)
-  - [5. ⚡ 毫秒级多端实时同步 (WebSocket)](#5--毫秒级多端实时同步-websocket)
-  - [6. 🧽 经典海绵宝宝身份系统](#6--经典海绵宝宝身份系统)
-  - [7. 💾 纯文件原子存储引擎 (No-DB)](#7--纯文件原子存储引擎-no-db)
-  - [8. 🛡️ 本机专属操作审计日志 (Audit Logs)](#8-️-本机专属操作审计日志-audit-logs)
-  - [9. 📱 PWA 原生跨平台体验](#9--pwa-原生跨平台体验)
-  - [10. 🌐 局域网 IP 变动自愈与稳定域名发现](#10--局域网-ip-变动自愈与稳定域名发现)
-  - [11. 🚀 点对点 (P2P) 极速直传与双轨传输引擎](#11--点对点-p2p-极速直传与双轨传输引擎)
-- [🚀 快速开始](#-快速开始)
-  - [方式一：Docker Compose（推荐）](#方式一docker-compose推荐)
-  - [方式二：全平台智能运维部署脚本 (`deploy.sh` / `deploy.bat` / `deploy.ps1`)](#方式二全平台智能运维部署脚本-deploysh--deploybat--deployps1)
-  - [方式三：本地源码运行](#方式三本地源码运行)
-- [📐 架构设计与技术栈](#-架构设计与技术栈)
-  - [⚡ P2P 点对点技术实现深度解析](#-p2p-点对点技术实现深度解析)
-    - [1. P2P 点对点设备发现原理](#1-p2p-点对点设备发现原理)
-    - [2. 连接建立与信令协商机制](#2-连接建立与信令协商机制)
-    - [3. 高性能双轨传输与流控实现](#3-高性能双轨传输与流控实现)
-    - [4. P2P 资源存储与无服务器管理方案](#4-p2p-资源存储与无服务器管理方案)
-  - [📚 架构与技术设计文档导航](#-架构与技术设计文档导航)
-- [📦 自动化运维体系](#-自动化运维体系)
-- [⚙️ 配置与数据持久化](#️-配置与数据持久化)
-- [🛡️ 网络安全与企业局域网设计](#️-网络安全与企业局域网设计)
-- [❓ 常见问题 (FAQ)](#-常见问题-faq)
-- [🤝 参与贡献](#-参与贡献)
-- [📄 开源协议](#-开源协议)
+- [💡 Why LightDrop?](#-why-lightdrop)
+- [🌟 Key Features](#-key-features)
+  - [1. 📝 Immersive Markdown Reader & Native Mermaid Engine](#1--immersive-markdown-reader--native-mermaid-engine)
+  - [2. 📁 Multi-File, Recursive Folder Packaging & Rich Bundles](#2--multi-file-recursive-folder-packaging--rich-bundles)
+  - [3. 🔒 Streamlined Permission Model & Safe Decryption](#3--streamlined-permission-model--safe-decryption)
+  - [4. 🔗 Standalone Extraction Pages & Direct Links](#4--standalone-extraction-pages--direct-links)
+  - [5. ⚡ Sub-Second WebSocket Synchronization](#5--sub-second-websocket-synchronization)
+  - [6. 🧽 Classic SpongeBob Identity System](#6--classic-spongebob-identity-system)
+  - [7. 💾 No-DB Pure File Atomic Storage Engine](#7--no-db-pure-file-atomic-storage-engine)
+  - [8. 🛡️ Host-Exclusive Audit Logs](#8-️-host-exclusive-audit-logs)
+  - [9. 📱 Progressive Web App (PWA) Experience](#9--progressive-web-app-pwa-experience)
+  - [10. 🌐 LAN IP Change Self-Healing & Stable Domain Discovery](#10--lan-ip-change-self-healing--stable-domain-discovery)
+  - [11. 🚀 Peer-to-Peer (P2P) Direct Transfer & Dual-Channel Engine](#11--peer-to-peer-p2p-direct-transfer--dual-channel-engine)
+- [🚀 Quick Start](#-quick-start)
+  - [Method 1: Docker Compose (Recommended)](#method-1-docker-compose-recommended)
+  - [Method 2: Smart Cross-Platform Deployment Scripts (`deploy.sh` / `deploy.bat` / `deploy.ps1`)](#method-2-smart-cross-platform-deployment-scripts-deploysh--deploybat--deployps1)
+  - [Method 3: Build & Run from Source](#method-3-build--run-from-source)
+- [📐 Architecture & Tech Stack](#-architecture--tech-stack)
+  - [⚡ Deep Dive into P2P Technical Architecture](#-deep-dive-into-p2p-technical-architecture)
+    - [1. P2P Device Discovery Mechanism](#1-p2p-device-discovery-mechanism)
+    - [2. Connection Establishment & Signaling Protocol](#2-connection-establishment--signaling-protocol)
+    - [3. High-Performance Dual-Channel Transmission & Flow Control](#3-high-performance-dual-channel-transmission--flow-control)
+    - [4. P2P Resource Storage & Zero-Server Management Scheme](#4-p2p-resource-storage--zero-server-management-scheme)
+  - [📚 Technical Architecture & Design Document Navigation](#-technical-architecture--design-document-navigation)
+- [📦 DevOps Tooling](#-devops-tooling)
+- [⚙️ Configuration & Data Persistence](#️-configuration--data-persistence)
+- [🛡️ Network Safety & Enterprise Security](#️-network-safety--enterprise-security)
+- [❓ Frequently Asked Questions (FAQ)](#-frequently-asked-questions-faq)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
 ---
 
-## 💡 项目亮点
+## 💡 Why LightDrop?
 
 <p align="center">
-  <img width="1024" alt="LightDrop Dashboard Preview" src="./docs/images/dashboard-zh.png" />
+  <img width="1024" alt="LightDrop Dashboard Preview" src="./docs/images/dashboard-en.png" />
 </p>
 
-在跨设备文件与文本互传场景中，现有方案往往存在诸多痛点与限制：
+Transferring files and text snippets between diverse devices on a local network has traditionally been frustrating:
 
-| 方案 | 常见痛点 | LightDrop 优势 |
+| Solution | Major Pain Points | LightDrop Advantages |
 | :--- | :--- | :--- |
-| **微信 / QQ / 钉钉** | 文件限速、图片视频严重压缩、敏感信息上传第三方公网云端 | **跑满局域网千兆/万兆带宽**，零外网流量消耗，数据 100% 物理留存本地 |
-| **Apple AirDrop** | 强绑定苹果生态，无法与 Windows、Linux、Android 设备互通 | **全平台免装客户端**，任意设备只要有现代浏览器即可秒级互传 |
-| **网盘 / 商业快传** | 强制注册登录、文件大小严苛受限、下载限速、需中间节点中转 | **零门槛即开即用**，局域网扫码秒连，支持 PWA 桌面/移动端安装 |
-| **传统 Samba / FTP** | 搭建配置繁琐、移动端界面体验差、完全不具备富文本与代码协同能力 | **开箱即用**，现代响应式 UI，原生支持 Markdown 与 Mermaid 矢量图表 |
+| **Instant Messengers (Slack, WeChat, Teams)** | File size limits, lossy media compression, sensitive data uploaded to public clouds | **Saturates full Gigabit LAN bandwidth**, zero external internet consumption, 100% data remains strictly local |
+| **Apple AirDrop** | Strictly bound to Apple ecosystem (iOS / macOS) | **Zero client installation**, operates instantly on any device with a modern web browser |
+| **Cloud Storage (Google Drive, Dropbox)** | Mandatory account creation, strict quotas, slow uploads, public intermediary servers | **Zero sign-up required**, instant connection via LAN QR code, native PWA desktop/mobile installation |
+| **Samba / FTP / NAS** | Complex configurations, poor mobile browser UX, lack of text and note sharing capabilities | **Zero-config out of the box**, modern responsive UI, native support for Markdown and Mermaid diagrams |
 
 ---
 
-## 🌟 核心功能特性
+## 🌟 Key Features
 
-### 1. 📝 沉浸式 Markdown 阅读器与 Mermaid 图表引擎
-- **全功能沉浸式阅读器**：
-  - 快速预览卡片与传输记录均提供一键 **「查看」**，呼出支持全屏平滑滚动的专用文档阅读器；
-  - **双视图自由切换**：支持在 **渲染预览 (Preview)** 与 **纯文本源码 (Raw)** 之间无缝切换；
-  - 完美兼容 **GitHub Flavored Markdown (GFM)**，包括复杂表格、任务列表、块引用与代码语法高亮。
-- **原生 Mermaid 流程图与图表渲染**：
-  - **丰富图表语法支持**：原生渲染 `flowchart` 流程图、`sequenceDiagram` 时序图、`classDiagram` 类图、`stateDiagram` 状态机、`erDiagram` 实体关系图、`gantt` 甘特图、`pie` 饼图、`gitGraph` 分支图、`mindmap` 思维导图等；
-  - **图表交互工具栏**：自动识别图表类型并标注徽标，支持图表与源码双视图独立切换；
-  - **一键复制代码 & 导出 SVG**：支持一键将图表源码复制到剪贴板，或直接导出高保真矢量 `.svg` 文件；
-  - **超大画布全屏大图预览**：点击放大按钮唤起居中全屏模态框，轻松平移与检视大型复杂架构图；
-  - **动态异步按需加载 (Code Splitting)**：未包含 Mermaid 的文档保持零额外网络负载，按需加载渲染模块；
-  - **强隔离排版引擎 (CSS Reset)**：严格重置并隔离外层 Markdown 行高与内边距，从根本上杜绝文字溢出边框、中英文乱折行或行距失真。
-- **智能多级目录 (TOC) 导航**：
-  - 自动从 Markdown 标题中提取章节层级目录，支持一键展开/折叠与快速定位；
-  - 点击目录项平滑滚动至对应章节，附带高亮淡出动效；
-  - 右侧悬浮“回到目录”与“回到顶部”快捷按钮，顶部提供实时阅读进度指示条；
-  - 支持一键导出/下载为标准 `.md` 文件，内置文件名合法化校验与自定义重命名。
+### 1. 📝 Immersive Markdown Reader & Native Mermaid Engine
+- **Full-Featured Distraction-Free Reader**:
+  - One-click **"View"** in both the quick preview card and history records opens a full-screen, smooth-scrolling document viewer;
+  - **Dual-View Seamless Toggle**: Effortlessly switch between **Rendered Preview** and **Raw Source**;
+  - Full compatibility with **GitHub Flavored Markdown (GFM)**, including complex tables, checklists, blockquotes, and code syntax highlighting.
+- **Native Mermaid Diagram & Flowchart Engine**:
+  - **Comprehensive Diagram Support**: Natively renders `flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram`, `gantt`, `pie`, `gitGraph`, `mindmap`, and more;
+  - **Interactive Diagram Toolbar**: Automatically detects diagram types with clean tags; supports switching between diagram and source code;
+  - **One-Click Copy & Export SVG**: Copy Mermaid source code with instant feedback, or export and download crisp, scalable vector `.svg` files;
+  - **Canvas Fullscreen Preview**: Expand complex architecture blueprints into a centered modal dialog with smooth panning and deep zooming;
+  - **Dynamic Lazy Loading (Code Splitting)**: Zero runtime impact on documents without diagrams; renders on demand;
+  - **CSS Style Isolation & Reset**: Rigorously resets line heights and padding to eliminate font overflow, boundary clashes, and text wrapping issues.
+- **Intelligent Table of Contents (TOC)**:
+  - Automatically parses markdown heading hierarchies with collapsible navigation;
+  - Smoothly scroll to target sections with subtle highlight fade animations;
+  - Floating "Back to Top" and "Back to Outline" buttons with a top reading progress indicator;
+  - Export and download notes directly as standard `.md` files with filename sanitization and custom rename support.
 
-### 2. 📁 多文件、文件夹递归压缩与图文合辑
-- **批量拖拽极速互传**：支持多文件、海量图片一次性拖拽上传，动态展示精确传输进度、速度与分项元信息；
-- **文件夹自动打包**：直接选择整个本地文件夹，服务端采用流式压缩（Streaming Zip）自动归档打包，完整保留多级层级结构；
-- **图文合辑专属呈现**：支持在上传文件的同时附带说明文本或 Markdown 笔记，列表顶部优先渲染正文摘要与可折叠 Markdown，附件整洁汇聚；
-- **高清缩略图与大图预览**：图片自动生成高清缩略图，点击呼出轻量画廊查看原图；
-- **智能剪贴板集成**：支持在页面任意位置通过快捷键 `Ctrl+V` / `Cmd+V` 直接粘贴图片、文件或长文本，附带本地文件路径防呆检测。
+### 2. 📁 Multi-File, Recursive Folder Packaging & Rich Bundles
+- **High-Speed Drag & Drop**: Drag multiple files and photo collections onto the dashboard with real-time transfer progress, speeds, and metadata;
+- **Recursive Folder Auto-Packaging**: Select an entire local directory; the server streams and archives it into a standard ZIP package while preserving nested directories;
+- **Rich Document & File Bundles**: Attach long explanatory text or Markdown notes alongside uploaded files. Explanatory summaries render at the top with collapsible content;
+- **HD Thumbnails & Gallery View**: Automatic generation of sharp thumbnails with a lightweight gallery modal for full-resolution inspection;
+- **Smart Clipboard Integration**: Press `Ctrl+V` / `Cmd+V` anywhere on the page to instantly paste images, files, or text, with built-in guardrails against accidental local file path drops.
 
-### 3. 🔒 权限模式与安全解密体验
-- **简明清晰的两种权限类型**：
-  - **🌐 局域网公开**：免密公开，局域网内任意访客均可自由查看、复制正文与下载附件；
-  - **🔒 PIN 密码保护**：受访问密码保护，服务端采用 SHA-256 加盐哈希脱敏，未验证前正文与文件下载直链均不向客户端泄露。
-- **会话解密持久记忆**：成功解锁一条记录后，在当前浏览器会话周期内自动保持解锁状态，再次查看或复制**无需重复输入密码**，锁图标自动转换为可用状态。
+### 3. 🔒 Streamlined Permission Model & Safe Decryption
+- **Two Crystal-Clear Access Modes**:
+  - **🌐 LAN Public**: Completely open to all local network devices without passwords;
+  - **🔒 PIN Protected**: Secured with customizable access PINs. Server-side SHA-256 salted hashing ensures plain text and download links are completely hidden from unauthorized visitors.
+- **Session Decryption Memory**: Once unlocked on a device, records remain decrypted within the active browser session. Subsequent viewing and copying **require zero repeated password prompts**, and lock icons seamlessly turn into ready actions.
 
-### 4. 🔗 独立提取页与免密直达链接
-- **单记录专属提取页 (`/download/:id`)**：
-  - 每条记录分配专属短链接与二维码，手机微信或浏览器扫码直达单个条目，无需暴露主站仪表盘所有历史记录；
-  - 针对文本记录提供优雅的卡片解锁过渡与阅读界面；
-- **免密直达链接**：
-  - 支持在分享链接中携带安全凭证参数（`?pwd=xxx`），接收方点击自动静默校验解锁；
-  - 分享弹窗支持一键复制“图文分享文案”与“快捷免密直链”。
+### 4. 🔗 Standalone Extraction Pages & Direct Links
+- **Isolated Extraction Routes (`/download/:id`)**:
+  - Share single records via dedicated URLs and QR codes without exposing the global dashboard records;
+  - Text records open in a specialized card and transition into the reader once unlocked;
+- **Direct Password-Free Links**:
+  - Supports appending security credentials (`?pwd=xxx`) to URLs for seamless, silent unlocking on recipient devices;
+  - Share modal offers one-click copying for formatted descriptions and direct password-free links.
 
-### 5. ⚡ 毫秒级多端实时同步 (WebSocket)
-- 局域网内任意设备执行发送、修改、重命名、删除或清空操作，其余所有在线设备**无需手动刷新**，毫秒级全自动同步视图；
-- 底部状态栏实时呈现当前局域网在线设备总数、延迟与服务健康状态。
+### 5. ⚡ Sub-Second WebSocket Synchronization
+- Uploads, updates, renames, deletions, and batch wipes broadcast to all connected devices in real time—**no manual browser refreshing required**;
+- Live count of active online devices, network latency, and service status displayed in the footer bar.
 
-### 6. 🧽 经典海绵宝宝身份系统
-- 内置 15 位经典海绵宝宝角色库（海绵宝宝 🧽、派大星 ⭐️、章鱼哥 🐙、蟹老板 🦀 等），初次访问自动分发角色与专属 Emoji；
-- 基于 `localStorage` 浏览器持久化，免去传统账号密码注册的繁琐，同时为发送记录、操作审计提供清晰直观的身份标识；
-- 顶部导航支持随时自定义昵称或一键随机换角色。
+### 6. 🧽 Classic SpongeBob Identity System
+- Includes 15 classic SpongeBob characters (SpongeBob 🧽, Patrick ⭐️, Squidward 🐙, Mr. Krabs 🦀, etc.), randomly assigned on initial visit;
+- Persisted locally in `localStorage`—no registration needed, while giving each sender a distinct name and emoji badge across the network;
+- Click the top navigation capsule to customize your display name or re-roll characters anytime.
 
-### 7. 💾 纯文件原子存储引擎 (No-DB)
-- **零外部数据库依赖**：无需安装 MySQL、PostgreSQL 或 Redis，采用 `records.json` 索引 + 物理文件目录隔离；
-- **文件系统原子写入 (Atomic Write)**：通过临时文件与底层重命名（`fs.renameSync`）机制保障并发写入安全，防止意外断电导致数据损坏；
-- **Web 端平滑热迁移**：系统设置中支持随时更改物理存储目录（如挂载的 NAS 或外部移动硬盘路径），支持**一键热迁移**历史数据，服务重启自动读取引导配置；
-- **自动清理策略**：支持配置 1 天 / 3 天 / 7 天 / 30 天 或永不清理过期文件。
+### 7. 💾 No-DB Pure File Atomic Storage Engine
+- **Zero Database Dependencies**: No MySQL, PostgreSQL, or Redis required. Operates using a lightweight `records.json` index + isolated directory storage;
+- **Atomic File Operations**: Safe concurrent writes using temporary staging and atomic renames (`fs.renameSync`) to eliminate corruption during power cuts or high traffic;
+- **Live Path Migration via Web UI**: Change your storage path (e.g., to a mounted NAS share) on the fly without stopping the service, with **one-click automated migration**;
+- **Automated Retention Schedules**: Configure retention periods (1 day / 3 days / 7 days / 30 days / Never) for hands-off automatic cleanup.
 
-### 8. 🛡️ 本机专属操作审计日志 (Audit Logs)
-- 仅在部署服务的本机（`localhost` / `127.0.0.1`）或受信任的管理员 IP 开放审计面板，局域网普通访客完全不可见；
-- 全链路实时追踪局域网各客户端的上传、下载、复制、删除、查看密码及访问分享单页等操作轨迹。
+### 8. 🛡️ Host-Exclusive Audit Logs
+- The operation audit log is strictly restricted to the local host machine (`localhost` / `127.0.0.1`) and trusted admin IPs, remaining completely hidden from normal LAN visitors;
+- Comprehensive audit trails tracking client IPs, usernames, upload/download events, copy actions, and PIN verification.
 
-### 9. 📱 PWA 原生跨平台体验
-- 完整遵循 Web App Manifest 与 Service Worker 规范；
-- 手机端支持“添加到主屏幕”，电脑端 Chrome / Edge / Safari 支持“安装应用”，拥有独立的运行窗口与原生 App 级操作质感。
+### 9. 📱 Progressive Web App (PWA) Experience
+- Fully compliant with Web App Manifest and Workbox Service Worker specifications;
+- Supports "Add to Home Screen" on mobile and "Install App" on desktop Chrome/Edge/Safari for standalone window execution.
 
-### 10. 🌐 局域网 IP 变动自愈与稳定域名发现
-- **Bonjour / mDNS 稳定本地域名**：系统自动生成 `http://<主机名>.local:8080` 稳定访问域名。宿主电脑无论切换到哪个 Wi-Fi，物理 IP 如何变动，手机添加到书签或主屏幕后**免重复扫码**，由底层 mDNS 协议秒级自动解析至最新物理 IP；
-- **跨平台原生桌面通知**：电脑切换 Wi-Fi 时，自动触发系统级通知横幅（macOS 通知中心、Windows 原生 Toast、Linux `notify-send`），第一瞬间告知当前最新可用局域网 IP 与访问地址；
-- **手机实时推送 (Bark / Webhook)**：设置中心支持填入 iOS Bark Key 或通用 Webhook 接收端，电脑切换 Wi-Fi 手机立即收到通知横幅，点击通知直接跳转进入最新服务；
-- **UDP 自发现与连接断线自愈**：集成轻量 UDP 8089 端口广播信标，前端实时监听网络断线与 WebSocket 变动事件，网络恢复时静默重连与寻址自愈。
+### 10. 🌐 LAN IP Change Self-Healing & Stable Domain Discovery
+- **Bonjour / mDNS Stable Local Domain**: Automatically generates `http://<hostname>.local:8080`. No matter how many times the host laptop switches Wi-Fi networks or how often the local IP changes, mobile devices bookmarking or adding this domain to Home Screen **never need to rescan the QR code**—system mDNS transparently resolves to the newest physical IP in sub-seconds;
+- **Cross-Platform Native Desktop Notifications**: When the host machine connects to a new network, a native desktop notification pops up immediately (macOS Notification Center, Windows PowerShell Toast/Balloon, Linux `notify-send`) displaying the latest LAN IP and web link;
+- **Real-Time Mobile Push Notifications (Bark / Webhook)**: Configure your iOS Bark Key or custom Webhook in Settings; your phone receives instant push alerts with clickable URLs whenever host Wi-Fi changes;
+- **UDP Discovery Beacon & Disconnect Self-Healing**: Includes an ultra-lightweight UDP 8089 discovery beacon and WebSocket `NETWORK_CHANGED` broadcast, enabling clients to silently detect IP shifts and auto-reconnect without user intervention.
 
-### 11. 🚀 点对点 (P2P) 极速直传与双轨传输引擎
-
-<p align="center">
-  <img width="1024" alt="LightDrop P2P Direct Drop Mode" src="./docs/images/p2p-zh.png" />
-</p>
-
-- **局域网设备自发现与在线感知**：自动发现同网段在线设备，动态生成专属设备卡片并标识系统与浏览器类型，支持一键设备收藏与长连接互信会话；
-- **WebRTC DataChannel 极速直连**：两端设备优先建立端到端加密通道（DTLS/SCTP），跑满局域网千兆/万兆带宽，大文件直传不经服务端磁盘中转，保护极致隐私；
-- **智能双轨降级与 100% 连通保障**：面对跨子网隔离或防火墙阻断 UDP 时，1.2 秒内自动平滑降级为 WebSocket 内存流式管道，兼顾极致传输速率与复杂内网环境 100% 连通性；
-- **严格背压控制与流式分片**：采用 64KB 流式分片与严格背压流控机制（256KB 唤醒 / 1MB 阈值），内存占用严格恒定在 2MB 以内，大文件传输零卡顿、零内存泄漏；
-- **IndexedDB 离线持久化与零落盘安全**：接收的文件与文本完全不经服务端磁盘存储，前端自动持久化存入浏览器本地 IndexedDB，支持离线极速调取与 0 流量导出。
+### 11. 🚀 Peer-to-Peer (P2P) Direct Transfer & Dual-Channel Engine
 
 <p align="center">
-  <img width="1024" alt="LightDrop P2P Device Picker Modal" src="./docs/images/p2p-picker-zh.png" />
+  <img width="1024" alt="LightDrop P2P Device Picker Modal" src="./docs/images/p2p-picker-en.png" />
 </p>
+
+- **LAN Device Auto-Discovery & Presence**: Automatically discovers peer devices on the same subnet, dynamically generating device cards with OS/browser badges, and supporting device favorites and persistent mutual-trust sessions;
+- **WebRTC DataChannel Direct Transfer**: Establishes end-to-end encrypted tunnels (DTLS/SCTP) directly between peers to saturate full Gigabit/10G LAN bandwidth without hitting server disks, ensuring maximum privacy;
+- **Intelligent Dual-Channel Fallback & 100% Reachability**: Seamlessly downgrades to a WebSocket in-memory streaming relay within 1.2s when encountering VLAN isolation or strict UDP firewall rules, guaranteeing 100% delivery across complex enterprise networks;
+- **Strict Backpressure Control & 64KB Chunking**: Features 64KB streaming chunking and dual-sided backpressure control (256KB low threshold / 1MB high limit), pinning memory consumption strictly below 2MB with zero UI stutter or leaks;
+- **IndexedDB Offline Persistence & Zero-Server Retention**: Transferred files and snippets bypass server disks entirely; the receiving browser automatically commits Blobs to IndexedDB for offline instant access and zero-network downloads.
 
 ---
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 方式一：Docker Compose（推荐）
+### Method 1: Docker Compose (Recommended)
 
-**环境要求**：已安装 Docker 和 Docker Compose。
+**Requirements**: Docker and Docker Compose.
 
-1. 克隆仓库并进入项目目录：
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/zhatiai/LightDrop.git
 cd LightDrop
 ```
 
-2. 一键启动服务：
+2. Start the service:
 
 ```bash
 docker compose up -d
 ```
 
-Docker Compose 将自动基于内置 `Dockerfile` 编译并启动服务，无需在宿主机安装 Node.js 或 pnpm。
+Docker Compose automatically builds the application using the included `Dockerfile` and starts the service. No manual installation of Node.js or pnpm is required.
 
-打开浏览器访问 `http://<本机局域网IP>:8080` 即可开始使用。数据与文件将持久化存储在 `./data` 中。
+Open `http://<YOUR_LAN_IP>:8080` in your browser. Uploaded files and application data are persisted in the `./data` directory.
 
-后续更新代码只需执行：
+To update the application:
 
 ```bash
 git pull
@@ -199,222 +195,222 @@ docker compose up -d --build
 
 ---
 
-### 方式二：全平台智能运维部署脚本 (`deploy.sh` / `deploy.bat` / `deploy.ps1`)
+### Method 2: Smart Cross-Platform Deployment Scripts (`deploy.sh` / `deploy.bat` / `deploy.ps1`)
 
-项目内置跨平台一键部署系统，**自动嗅探操作系统环境 (macOS / Linux / Windows)** 并动态匹配最优生命周期管理机制与开机自启动配置：
+LightDrop includes an intelligent deployment toolchain that **auto-detects your operating system (macOS / Linux / Windows)** and configures optimal lifecycle management and auto-start services:
 
 ```bash
 # === macOS / Linux / Windows (Git Bash) ===
-# 交互式向导 (自动检测系统、适配模式与自启动选项)
+# Interactive wizard (auto-detects OS, guides deployment modes & autostart)
 ./deploy.sh
 
-# 自动选择系统最优原生模式并开启开机自启 (macOS 推荐)
+# Automatically choose best native daemon and enable autostart (Recommended for macOS)
 ./deploy.sh -m auto --autostart
 
-# macOS 原生 LaunchAgent 守护服务 (免 root、崩溃自动恢复、开机自启)
+# Native macOS LaunchAgent daemon (crash auto-restart, boot on login, no root needed)
 ./deploy.sh -m launchd --autostart
 
-# Linux 原生 Systemd 系统服务
+# Native Linux Systemd service
 ./deploy.sh -m systemd --autostart
 
-# Docker 容器化部署 (全平台)
+# Docker containerized deployment (Cross-platform)
 ./deploy.sh -m docker -p 8080 --autostart
 ```
 
 ```powershell
-# === Windows 原生 (PowerShell / CMD 双击) ===
-# 双击 deploy.bat 或在 PowerShell 中执行:
+# === Native Windows (PowerShell / CMD) ===
+# Double-click deploy.bat or run via PowerShell:
 .\deploy.ps1
 
-# Windows 任务计划程序静默后台常驻 (推荐)
+# Windows Task Scheduler silent daemon (Recommended)
 .\deploy.ps1 -Mode task -AutoStart $true
 
-# Windows 开机自启文件夹模式 (免管理员权限)
+# Windows Startup folder mode (no administrator privileges needed)
 .\deploy.ps1 -Mode startup -AutoStart $true
 ```
 
 ---
 
-### 方式三：本地源码运行
+### Method 3: Build & Run from Source
 
-**环境要求**：Node.js >= 18.0.0，pnpm >= 8.0.0
+**Requirements**: Node.js >= 18.0.0, pnpm >= 8.0.0
 
 ```bash
-# 1. 安装全量依赖
+# 1. Install dependencies
 pnpm install
 
-# 2. 编译生产代码 (客户端 Vite + 服务端 TypeScript)
+# 2. Build production assets (Vite client + TypeScript server)
 pnpm build
 
-# 3. 启动生产服务
+# 3. Start production server
 pnpm start
 
-# 或进入开发热重载模式
+# Or run in development mode with hot-reloading
 pnpm dev
 ```
 
 ---
 
-## 📐 架构设计与技术栈
+## 📐 Architecture & Tech Stack
 
-本项目采用 **TypeScript 全栈单仓 (Monorepo) 规范**，前后端共享底层类型契约与协议定义：
+LightDrop follows a **Full-Stack TypeScript Monorepo architecture**, sharing strict type definitions between frontend and backend:
 
 > [!TIP]
-> 📖 **进阶技术文档**：想深入了解系统整体全景设计、No-DB 原子存储、WebSocket 连接池与 P2P 双轨协议实现细节？欢迎查阅 [系统整体架构与详细设计文档](./docs/architecture.md) 与 [P2P 点对点传输与存储设计文档](./docs/p2p-design.md)。
+> 📖 **Deep-Dive Specifications**: Looking for architectural panoramas, No-DB storage internals, WebSocket session handling, and P2P protocol details? Check out our dedicated guides: [System Architecture & Technical Design Document](./docs/architecture_EN.md) and [P2P Direct Transfer & Local Storage Technical Design Document](./docs/p2p-design_EN.md).
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["客户端 (Client) - React 18 + Vite + TailwindCSS"]
-        UI["响应式 Web / PWA 界面"]
-        Reader["Markdown 阅读器 (GFM + Mermaid 引擎)"]
-        WSClient["WebSocket Client (实时状态同步)"]
+    subgraph ClientLayer["Client Layer - React 18 + Vite + TailwindCSS"]
+        UI["Responsive Web / PWA Interface"]
+        Reader["Markdown Reader (GFM + Mermaid Engine)"]
+        WSClient["WebSocket Client (Real-time Sync)"]
         P2PEngine["P2P Engine (WebRTC DataChannel + Relay)"]
-        P2PStorage["IndexedDB + LocalStorage (P2P 本地安全存储)"]
+        P2PStorage["IndexedDB + LocalStorage (P2P Secure Local Storage)"]
     end
 
-    subgraph ServerLayer["服务端 (Server) - Node.js + Express + WS"]
-        Router["Express REST API 路由 (/api/records, /download)"]
-        WSServer["WebSocket Hub (广播、信令中继与节点拓扑)"]
-        MDNS["Bonjour / mDNS + UDP 广播引擎 (Port 8089)"]
+    subgraph ServerLayer["Server Layer - Node.js + Express + WS"]
+        Router["Express REST API (/api/records, /download)"]
+        WSServer["WebSocket Hub (Broadcasting, Signaling & Peer Topology)"]
+        MDNS["Bonjour / mDNS + UDP Beacon Engine (Port 8089)"]
     end
 
-    subgraph StorageLayer["持久化层 (Storage) - No-DB Atomic Storage"]
-        JSONIndex["records.json (原子重命名索引)"]
-        Config["lightdrop.config.json (免重启热更新配置)"]
-        FileDir["files/{recordId}/ (分片物理存储)"]
-        Audit["audit_logs.json (本地安全审计)"]
+    subgraph StorageLayer["Storage Layer - No-DB Atomic Storage"]
+        JSONIndex["records.json (Atomic Rename Index)"]
+        Config["lightdrop.config.json (Zero-Restart Config)"]
+        FileDir["files/{recordId}/ (Partitioned Storage)"]
+        Audit["audit_logs.json (Local Security Audit)"]
     end
 
-    RemotePeer["局域网对端设备 (Remote Peer)"]
+    RemotePeer["LAN Remote Peer"]
 
     UI --> Router
     Reader --> UI
-    WSClient <-->|"全双工状态同步与信令中继"| WSServer
-    P2PEngine <-->|"WebRTC DataChannel 局域网直连"| RemotePeer
-    P2PEngine -.->|"WebSocket 内存隧道降级中继"| WSServer
+    WSClient <-->|"Full-Duplex Sync & P2P Signaling"| WSServer
+    P2PEngine <-->|"WebRTC DataChannel Direct Transfer"| RemotePeer
+    P2PEngine -.->|"WebSocket In-Memory Relay Fallback"| WSServer
     P2PEngine --> P2PStorage
     Router --> JSONIndex
     Router --> FileDir
     Router --> Audit
     Router --> Config
-    MDNS -.->|"网络自愈感知"| ClientLayer
+    MDNS -.->|"Self-Healing Discovery"| ClientLayer
 ```
 
-### ⚡ P2P 点对点技术实现深度解析
+### ⚡ Deep Dive into P2P Technical Architecture
 
-针对现代浏览器在纯 Web 环境下缺乏原生 Raw UDP / 广播套接字能力的限制，LightDrop 设计了一套**「两层分立、服务协调驱动」**的高性能 P2P 传输架构。系统在保持完全免装客户端、纯浏览器原生体验的前提下，实现了毫秒级设备自发现、WebRTC/WebSocket 双轨传输、纳秒级背压流控以及前端 IndexedDB 离线持久化管理。
+Given that web browsers operate inside sandboxed environments lacking native Raw UDP / broadcast socket capabilities, LightDrop designs a **two-tier, service-coordinated P2P transmission architecture**. Without requiring client installations or virtual network adapters, the system achieves sub-second device discovery, dual-channel adaptive data streaming, fine-grained backpressure flow control, and offline IndexedDB persistence.
 
-#### 1. P2P 点对点设备发现原理
+#### 1. P2P Device Discovery Mechanism
 
-系统将设备发现划分为**服务级物理网络发现**与**端侧浏览器节点拓扑发现**两个层次：
+Device discovery is architected into two decoupled tiers: **Service-Level Physical Network Discovery** and **Client-Level Browser Peer Topology Discovery**:
 
-- **底层服务级发现 (UDP 广播信标 + mDNS)**：
-  - **主动广播 (Announce)**：后台 `UdpDiscoveryService` 监听 `0.0.0.0:8089`，在服务冷启动或检测到物理网卡 IP 切换时，主动向局域网广播地址 `255.255.255.255:8089` 发射 `LIGHTDROP_ANNOUNCE` 报文，广播当前服务实例 ID、IP、端口及 Bonjour 域名；
-  - **被动嗅探应答 (Probe Response)**：持续监听局域网内客户端或节点发出的探测请求（包含 `DISCOVER`、`PING`、`SCAN`、`QUERY`），单播回复包含服务元信息的 `LIGHTDROP_PONG`；
-  - **防风暴与防回路设计**：每个服务进程生成唯一 `instanceId`，绝对丢弃自身回环报文；配置同 IP 客户端 500ms 响应限流与 5 秒 TTL 网卡接口缓存，杜绝网络风暴与高频系统调用消耗 CPU。
-- **端侧浏览器节点拓扑发现 (WebSocket Hub)**：
-  - **稳定设备指纹**：客户端在 `localStorage` 持久化生成全局唯一且跨刷新稳定的 `deviceId`（格式形如 `node_<timestamp>_<random>`），并绑定当前设备的操作系统、浏览器标识、角色昵称与专属头像色彩；
-  - **入网自声明 (`PEER_REGISTER`)**：浏览器建立 WebSocket 连接后，立即上报 `PEER_REGISTER`。服务端提取客户端真实底层局域网 IP (`clientIp`) 注入节点元数据；
-  - **全量单播 + 增量广播拓扑模型**：
-    - **全量单播**：服务端仅向新上线节点单播下发当前所有在线设备列表（`PEER_ONLINE_LIST`，排除自身），避免全网组播；
-    - **增量广播**：服务端向其他在线节点轻量通知新节点加入（`PEER_JOINED`），节点改名或进入接收模式时通知 `PEER_UPDATED`，节点掉线通过 30s 心跳探活感知后广播 `PEER_LEFT`。全网拓扑数据传输维持在微秒级与数十字节级别。
+- **Service-Level Physical Network Discovery (UDP Beacon + mDNS)**:
+  - **Active Beacon Announcement**: The server background service `UdpDiscoveryService` listens on `0.0.0.0:8089`. On cold startup or whenever physical network interfaces toggle, it broadcasts a `LIGHTDROP_ANNOUNCE` packet to `255.255.255.255:8089`, declaring its instance ID, IP, port, and Bonjour domain;
+  - **Passive Probe Response**: Continually monitors incoming probe packets containing `DISCOVER`, `PING`, `SCAN`, or `QUERY`, unicasting a `LIGHTDROP_PONG` packet with server metadata;
+  - **Broadcast Storm & Self-Echo Mitigation**: Each server process generates a unique `instanceId` to discard self-echo packets. Rate-limiting restricts responses to the same client IP to at most once per 500ms, and a 5-second TTL cache for network interfaces prevents frequent kernel system calls and CPU spikes.
+- **Client-Level Browser Peer Topology Discovery (WebSocket Hub)**:
+  - **Persistent Device Fingerprinting**: Each client generates a globally unique and stable `deviceId` (e.g. `node_<timestamp>_<random>`) stored in `localStorage`, bundled with its OS, browser family, SpongeBob avatar, and operating mode (e.g. Receive Mode);
+  - **Online Declaration (`PEER_REGISTER`)**: Upon opening the WebSocket connection, the browser immediately submits a `PEER_REGISTER` event. The server captures the real underlying socket client IP (`clientIp`) and enriches the peer info;
+  - **Full Snapshot Unicast + Incremental Broadcast**:
+    - **Full Snapshot Unicast**: The server only unicasts the active peer list (`PEER_ONLINE_LIST`, excluding self) to the newly connected node, preventing wasteful network floods;
+    - **Incremental Broadcast**: Other online peers receive a lightweight `PEER_JOINED` event. Attribute updates trigger `PEER_UPDATED`, and disconnections detected via 30s keep-alive pings trigger `PEER_LEFT`. Topology traffic is minimized to sub-millisecond, sub-hundred-byte JSON events.
 
-#### 2. 连接建立与信令协商机制
+#### 2. Connection Establishment & Signaling Protocol
 
-P2P 传输建立前，系统通过双段握手、信令单播转发与超时自动降级机制确保连接安全与 100% 可达：
+Prior to data transfer, the system orchestrates mutual-consent handshakes, unicast signaling relay, and adaptive channel negotiation:
 
-- **会话模型与握手协议**：
-  - **轻量单次传输握手**：发送方发送 `HANDSHAKE_REQUEST`，携带文件列表、预览文本、总数据量及发送方指纹；接收方弹出接收卡片，支持**接受 / 拒绝 / 忙碌**响应（`HANDSHAKE_RESPONSE`）；
-  - **互信长连接会话 (Persistent Session)**：双方可申请建立长期互信直通会话（`SESSION_REQUEST` -> `SESSION_ESTABLISHED`），会话存续期间支持**免二次确认极速直传**，以及专属的 **0-RTT 极速单向文本直发 (`SESSION_DIRECT_TEXT`)**；
-  - **绝对单播信令中继**：所有会话握手、SDP Offer/Answer 及 ICE Candidates 均封装为 `P2P_DIRECT_MESSAGE`，服务端严格按照 `targetDeviceId` 单播投递，服务端仅做内存透明转发，完全不触碰无关设备。
-- **1.2 秒双轨自适应通道协商**：
-  - 协商阶段首先尝试初始化 WebRTC `RTCPeerConnection`，配置公网 STUN 候选集并创建 DataChannel（`ordered: true`，二进制传输类型 `arraybuffer`）；
-  - **握手超时保护**：设立 1200ms 的局域网直连打洞等待窗口。若 1.2 秒内 DataChannel 打开成功，锁定 `webrtc` 极速直连模式（强制 DTLS/SCTP 加密，跑满局域网千兆/万兆带宽）；若处于跨子网隔离、对称 NAT 或企业防火墙严禁 UDP 端口导致超时，**无缝平滑降级至 `relay` 模式**（通过已有 WebSocket 管道实现内存流式中继），确保极端网络环境下的 100% 成功交付。
+- **Session Models & Handshake Protocols**:
+  - **Lightweight Single-Transfer Handshake**: The sender dispatches a `HANDSHAKE_REQUEST` containing file manifests, previews, total bytes, and sender fingerprint. The recipient inspects the interactive modal and returns a `HANDSHAKE_RESPONSE` (`accepted` / `rejected` / `busy` / `timeout`);
+  - **Persistent Mutual-Trust Session**: Peers can establish a long-lived mutual session (`SESSION_REQUEST` -> `SESSION_ESTABLISHED`). Active sessions bypass repetitive handshakes and unlock **0-RTT Instant Unidirectional Text Dispatch (`SESSION_DIRECT_TEXT`)**;
+  - **Strict Unicast Signaling Relay**: All session handshakes, SDP Offers/Answers, and ICE Candidates are encapsulated as `P2P_DIRECT_MESSAGE` and routed strictly by `targetDeviceId` through WebSocket memory. Unrelated nodes remain completely untouched.
+- **1.2s Adaptive Dual-Channel Negotiation**:
+  - During handshake initiation, the engine initializes an `RTCPeerConnection` with STUN candidates and creates an `RTCDataChannel` (`ordered: true`, binary type `arraybuffer`);
+  - **Fallback Timeout**: A 1200ms timeout window is allotted for LAN hole punching. If the DataChannel opens successfully within 1.2s, the mode locks into `webrtc` (DTLS/SCTP end-to-end encryption, maxing out LAN speeds). If cross-subnet routing, symmetric NAT, or strict corporate firewalls block UDP, the engine **seamlessly downgrades to `relay` mode** (streaming via the existing WebSocket in-memory tunnel), ensuring 100% transfer success.
 
-#### 3. 高性能双轨传输与流控实现
+#### 3. High-Performance Dual-Channel Transmission & Flow Control
 
-为应对大文件、海量数据互传中的内存抖动、网卡拥塞与卡顿问题，P2P 引擎设计了严格的流控流水线：
+To overcome memory spikes, buffer bloat, and browser tab freezes during large-file transfers, the P2P engine implements a strict streaming pipeline:
 
-- **64KB 流式分片 (Streaming Chunking)**：
-  - 文件读取完全摒弃整文件载入内存的方式，采用 `File.slice(offset, offset + 64KB)` 步进分块流式读取为 `ArrayBuffer`；
-  - 在 WebRTC 通道下原生投递二进制分片；在 Relay 通道下以内存 Base64 分片走 WebSocket 单播中继。
-- **严格的双向背压控制 (Backpressure Control)**：
-  - **WebRTC 背压**：持续监控 DataChannel 缓冲区水位 `dc.bufferedAmount`，当堆积超过 1MB 阈值时立即挂起读取，等待底层网卡排空并触发 `onbufferedamountlow`（唤醒水位 256KB）后再恢复调度；
-  - **WebSocket 背压**：实时探测底层的 `activeWs.bufferedAmount`，当积压超过 512KB 时挂起循环执行 `waitForWsDrain` 等待网络冲刷；
-  - 双端内存占用始终恒定在 **< 2MB**，彻底杜绝大文件传输导致浏览器页面卡死或标签页崩溃 (OOM)。
-- **网卡级真实出站速率测算**：
-  - 计算传输进度与瞬时速度时，系统严格扣除本地套接字出站缓冲区中暂存滞留的数据量（`actualDeliveredBytes = transferredBytes - buffered`），杜绝“数据还在本地内存就提前显示 100%”的虚假进度。
-- **双端确认与落盘强同步 (ACK-driven Reliability)**：
-  - 传输期间接收端每 300ms 或每接收 256KB 向发送端节流回传已收到的真实字节数（`TRANSFER_ACK`），双端进度毫秒级精准对齐；
-  - **关键完成握手**：发送端在全部数据发出后，进度最高停留在 99%；接收端必须在组装全部二进制分片、校验无误并写入存储后，回传 `TRANSFER_COMPLETE_ACK` 确认，发送端收到后才正式触发 100% 完成回调，从协议层杜绝单侧假死。
+- **64KB Streaming Chunking**:
+  - File reading avoids loading entire files into memory; it reads 64KB slices sequentially using `File.slice(offset, offset + 64KB)` as `ArrayBuffer`;
+  - Binary chunks are sent natively over WebRTC DataChannel, or converted to Base64 chunks over the WebSocket relay.
+- **Dual-Sided Backpressure Control**:
+  - **WebRTC Backpressure**: Monitors DataChannel buffer depth `dc.bufferedAmount`. When exceeding 1MB, sending halts until `onbufferedamountlow` triggers at the 256KB low-water mark;
+  - **WebSocket Backpressure**: Monitors `activeWs.bufferedAmount`. If outbound buffers accumulate above 512KB, the loop yields via `waitForWsDrain`;
+  - System memory consumption is strictly pinned at **< 2MB**, completely eliminating out-of-memory (OOM) browser crashes.
+- **True Outbound NIC Rate Measurement**:
+  - Real-time speeds and progress compute only bytes actually flushed from the network card (`actualDeliveredBytes = transferredBytes - buffered`), eliminating false 100% progress indications where data remains trapped in local socket buffers.
+- **Dual-Sided ACK Confirmation & Disk Assembly Sync**:
+  - During transfer, the receiver throttles progress ACKs (`TRANSFER_ACK`) back to the sender every 300ms or 256KB for precision alignment;
+  - **Final Completion Handshake**: The sender caps progress at 99% upon emitting all bytes. Only after the receiver verifies and commits all blobs to local storage and returns a `TRANSFER_COMPLETE_ACK` does the sender trigger its 100% completion callback, preventing single-sided hanging states.
 
-#### 4. P2P 资源存储与无服务器管理方案
+#### 4. P2P Resource Storage & Zero-Server Management Scheme
 
-LightDrop P2P 传输彻底贯彻**「零服务端依赖与数据绝对留存本地」**的隐私哲学：
+LightDrop P2P strictly enforces a **zero-server retention and local-first privacy** architecture:
 
-- **零服务端物理落盘 (Zero-Server-Disk-Retention)**：
-  - P2P 直传产生的所有文件实体与私密文本**完全不经过服务端的物理磁盘**（绝不写入服务端 `data/files/` 物理目录与 `records.json` 索引库），服务端数据库无任何明文记录，物理隔绝服务端窥探。
-- **前端双层混合持久化存储 (Hybrid Local Persistence)**：
-  - **轻量元数据层 (`localStorage`)**：存储 P2P 传输历史摘要（`lightdrop_p2p_records`，包含传输 ID、对端昵称、角色头像、时间戳、文件列表及体积），与服务端公共共享记录无缝聚合在同一个数据表格中展示，附带显式 `P2P` 专有徽标；
-  - **二进制实体层 (`IndexedDB`)**：文件传输完成（`completeP2PRecord`）后，接收端将二进制文件 Blob 自动持久化写入浏览器独立的 IndexedDB（数据库名 `LightDrop_P2P_DB`，对象仓库 `blobs`，键名 `${recordId}_${fileIndex}`），彻底突破 `localStorage` 5MB 的存储容量限制，安全承载数百 MB 乃至 GB 级文件的离线安全留存。
-- **无服务极速提取与下载 (Zero-Network Blob Export)**：
-  - 用户在记录表格中点击“下载”或“查看”P2P 记录时，数据层（`useRecords`）检测到 `isP2P` 属性，直接通过 `getP2PRecordBlob()` 从本地 IndexedDB 读取 Blob，并通过 `URL.createObjectURL` 唤起浏览器原生安全保存；**全程消耗 0 外部网络带宽、0 服务端资源负载**。
-- **原子级生命周期管理**：
-  - **级联删除**：删除单条 P2P 记录时，原子同步清理 `localStorage` 索引元数据及关联的全部 `IndexedDB` 物理文件分片；
-  - **一键清空**：支持在表格批量清理时一键排空所有本地 P2P 缓存（`clearAllLocalP2PRecords`）；
-  - **隐私隔离**：在浏览器无痕/隐身模式或手动清空站点数据时自动全量销毁，不留任何持久化物理痕迹。
+- **Zero-Server-Disk-Retention**:
+  - P2P files and text snippets **never touch the server's disk storage** (they are never written to `data/files/` or `records.json`), leaving zero server-side logs or traces.
+- **Hybrid Local Persistence**:
+  - **Lightweight Metadata Layer (`localStorage`)**: Stores transfer summaries (`lightdrop_p2p_records` including transferId, peer nickname, avatar, timestamp, file counts, and sizes). These entries blend seamlessly into the main records table adorned with a prominent `P2P` badge;
+  - **Binary Blob Layer (`IndexedDB`)**: Once a transfer finishes (`completeP2PRecord`), binary blobs are committed into browser-local IndexedDB (`LightDrop_P2P_DB` -> `blobs` store, keyed by `${recordId}_${fileIndex}`). This bypasses the 5MB `localStorage` limit, supporting hundreds of megabytes or gigabytes of offline storage.
+- **Zero-Network Blob Export & Download**:
+  - When users view or download a P2P item, the records hook (`useRecords`) intercepts the `isP2P` flag, retrieves the Blob from IndexedDB via `getP2PRecordBlob()`, and triggers a native download via `URL.createObjectURL`; **0 external network bandwidth or server compute is consumed**.
+- **Atomic Lifecycle Management**:
+  - **Cascading Deletion**: Deleting a single P2P record atomically clears its `localStorage` index and purges all corresponding `IndexedDB` blobs;
+  - **Batch Clear**: Supports one-click purging of all local P2P cache via `clearAllLocalP2PRecords`;
+  - **Private Browsing Isolation**: Incognito mode or clearing website data instantly purges all P2P assets without leaving trace evidence on the host.
 
-### 📚 架构与技术设计文档导航
+### 📚 Technical Architecture & Design Document Navigation
 
-为了方便开发者和架构师深入掌握 LightDrop 的底层架构与交互协议，项目在 [`docs/`](./docs) 目录下维护了专项技术设计全景文档：
+For developers and system architects seeking an in-depth understanding of LightDrop's internal design, storage models, and protocol pipelines, comprehensive technical specifications are available in the [`docs/`](./docs) directory:
 
-| 专题技术文档 | 语言版本 | 核心覆盖范围 |
+| Document | Languages | Core Coverage |
 | :--- | :--- | :--- |
-| 📘 **系统整体技术架构与详细设计** | [简体中文](./docs/architecture.md) · [English](./docs/architecture_EN.md) | 全栈分层拓扑、No-DB 原子覆写引擎、WebSocket 连接池、局域网 IP 自愈感知、企业安全白名单与权限模型 |
-| 🚀 **P2P 点对点传输与资源存储技术设计** | [简体中文](./docs/p2p-design.md) · [English](./docs/p2p-design_EN.md) | 两层设备发现机制、WebRTC/Relay 1.2s 双轨竞速、64KB 背压流控流水线、IndexedDB 零落盘隐私持久化 |
-| 🛠️ **远端服务器部署与测试缺陷报告** | [缺陷复盘报告](./docs/bug.md) | 真实 Ubuntu 生产服务器全覆盖压测、多环境 Shell 脚本兼容性诊断与 12 项高危缺陷修复复盘 |
+| 📘 **System Architecture & Technical Design** | [English](./docs/architecture_EN.md) · [简体中文](./docs/architecture.md) | Multi-tier topology, No-DB atomic rename engine, WebSocket connection pools, LAN IP self-healing, and enterprise security models |
+| 🚀 **P2P Direct Transfer & Local Storage Technical Design** | [English](./docs/p2p-design_EN.md) · [简体中文](./docs/p2p-design.md) | Two-tier discovery, WebRTC/Relay 1.2s adaptive negotiation, 64KB backpressure pipeline, and IndexedDB zero-server persistence |
+| 🛠️ **Remote Server Deployment Bug Report** | [Issue Retrospective](./docs/bug.md) | Comprehensive test coverage on Ubuntu 22.04 LTS, cross-platform shell compatibility analysis, and post-mortem fixes for 12 critical bugs |
 
-### 目录结构组织
+### Directory Structure
 
 ```text
 LightDrop/
 ├── src/
-│   ├── shared/                # 协议层：前后端共享 TypeScript 类型定义与常量
-│   ├── server/                # 服务端：Express + WebSocket + 原子文件引擎 + mDNS 服务
-│   └── client/                # 客户端：React 18 + Vite + Tailwind CSS + Mermaid + PWA
-├── scripts/                   # 自动化运维脚本库 (deploy, package, uninstall, common)
-├── Dockerfile                 # 多阶段瘦身生产容器构建文件
-└── docker-compose.yml         # 生产容器编排文件
+│   ├── shared/                # Shared: TypeScript types, contracts, and constants
+│   ├── server/                # Backend: Express + WebSocket + Atomic storage + mDNS
+│   └── client/                # Frontend: React 18 + Vite + Tailwind CSS + Mermaid + PWA
+├── scripts/                   # Automated DevOps scripts (deploy, package, uninstall, common)
+├── Dockerfile                 # Multi-stage production container specification
+└── docker-compose.yml         # Container orchestration specification
 ```
 
 ---
 
-## 📦 自动化运维体系
+## 📦 DevOps Tooling
 
-| 脚本 | 适用平台 | 生命周期支持 | 常用指令示例 |
+| Script | Supported OS | Lifecycle Managers | Example Commands |
 | :--- | :--- | :--- | :--- |
-| `deploy.sh` / `deploy.bat` / `deploy.ps1` | macOS / Linux / Windows | **macOS**: `launchd` (LaunchAgent)<br>**Linux**: `systemd`<br>**Windows**: `task` / `startup`<br>**全平台**: `docker` / `pm2` / `standalone` | `./deploy.sh -m auto --autostart`<br>`.\deploy.ps1 -Mode task` |
-| `package.sh` | Linux / macOS / Git Bash | 多形态发行打包 (Docker TAR 离线镜像 / 原生免编独立发行包) | `./package.sh --all` |
-| `uninstall.sh` / `uninstall.bat` / `uninstall.ps1` | macOS / Linux / Windows | 精准停用服务、注销自启动项，支持数据保留或全量清除 | `./uninstall.sh --keep-data`<br>`.\uninstall.ps1 -DeleteData` |
+| `deploy.sh` / `deploy.bat` / `deploy.ps1` | macOS / Linux / Windows | **macOS**: `launchd` (LaunchAgent)<br>**Linux**: `systemd`<br>**Windows**: `task` / `startup`<br>**Cross-Platform**: `docker` / `pm2` / `standalone` | `./deploy.sh -m auto --autostart`<br>`.\deploy.ps1 -Mode task` |
+| `package.sh` | Linux / macOS / Git Bash | Multi-format distribution bundler (Offline Docker TAR / Native standalone archive) | `./package.sh --all` |
+| `uninstall.sh` / `uninstall.bat` / `uninstall.ps1` | macOS / Linux / Windows | Clean service uninstaller, removes autostart registrations with optional data retention | `./uninstall.sh --keep-data`<br>`.\uninstall.ps1 -DeleteData` |
 
 ---
 
-## ⚙️ 配置与数据持久化
+## ⚙️ Configuration & Data Persistence
 
-### 存储目录结构
-数据默认持久化在 `./data`（或部署工作目录下的 `data` 路径）：
+### Storage Directory Layout
+Data defaults to `./data` (or the configured `data` path inside your working directory):
 
 ```text
 data/
-├── records.json               # 共享记录元数据 (内存索引加速 + 原子重命名覆写)
-├── settings.json              # 系统运行首选项 (单文件限额、自动清理周期)
-├── audit_logs.json            # 局域网操作审计日志
-└── files/<recordId>/          # 上传的物理文件存储目录
+├── records.json               # Shared record metadata (in-memory index + atomic overwrite)
+├── settings.json              # System preferences (file limits, cleanup intervals)
+├── audit_logs.json            # Local LAN operation audit trail
+└── files/<recordId>/          # Physical storage directory for uploaded files
 ```
 
-### 独立配置文件与免重启热更新 (`lightdrop.config.json`)
+### Standalone Configuration & Zero-Restart Hot Reloading (`lightdrop.config.json`)
 
-系统提供独立的全局配置文件 `lightdrop.config.json`（位于部署工作目录，例如 macOS 原生服务为 `~/Library/Application Support/LightDrop/config/lightdrop.config.json`，源码运行则位于项目根目录）：
+The system provides an isolated global configuration file `lightdrop.config.json` (located in the installation directory, e.g. `~/Library/Application Support/LightDrop/config/lightdrop.config.json` for macOS launchd, or the repository root when running from source):
 
 ```json
 {
@@ -430,14 +426,14 @@ data/
 }
 ```
 
-- **免重启热更新 (Hot-Reloading)**：直接编辑该 JSON 配置文件并保存，服务端底层文件监听器将**毫秒级自动热更新**并应用新策略，且通过 WebSocket 实时广播同步至所有已连接的设备界面，**完全无需重启服务进程**。
-- **权限安全隔离 (Guest Read-Only / Admin)**：
-  - 存储目录、单文件上传上限与自动清理策略为服务端全局配置；
-  - 局域网内其他设备打开「设置」时，**所有服务器配置项均强制呈只读锁定状态**，界面呈现黄色访客标识，防止非管理员篡改；
-  - 仅**部署服务器本机（回环地址及宿主机物理网卡）**或在 `adminIps` 列表中指定的管理员 IP 设备具备可写修改权限；
-  - 部署脚本支持直接指定管理员 IP 列表：`./deploy.sh --admin-ips "192.168.1.100,10.0.0.*"`。
+- **Zero-Restart Hot-Reloading**: Directly edit and save this file anytime. The filesystem watcher applies updates within milliseconds and broadcasts them via WebSocket—**zero process restarts required**.
+- **Role-Based Security Isolation (Guest Read-Only / Admin)**:
+  - Storage paths, upload limits, and auto-cleanup policies apply globally;
+  - Visiting the Settings modal from other LAN devices shows all server configuration fields **locked in read-only mode** with a warning badge;
+  - Only the **host machine (`localhost` / `127.0.0.1`)** or clients with IPs matched in `adminIps` have write authorization;
+  - Configure admin IPs during deployment: `./deploy.sh --admin-ips "192.168.1.100,10.0.0.*"`.
 
-### 进程管理常用命令
+### Process Management Commands
 - **macOS (launchd)**:
   ```bash
   launchctl unload -w ~/Library/LaunchAgents/com.lightdrop.server.plist && launchctl load -w ~/Library/LaunchAgents/com.lightdrop.server.plist
@@ -457,99 +453,96 @@ data/
 
 ---
 
-## 🛡️ 网络安全与企业局域网设计
+## 🛡️ Network Safety & Enterprise Security
 
-很多局域网工具在企业环境或大型 Wi-Fi 下容易引发 IT 审计关注或网络广播风暴担忧。LightDrop 从底层协议规范严格遵循**低频、单向、零污染**原则设计，天然适配企业内网：
+Traditional LAN file-sharing tools frequently raise concerns among IT administrators regarding broadcast storms or unauthorized scanning. LightDrop is architected strictly under the **low-frequency, unidirectional, zero-pollution** paradigm:
 
-### 1. 绝对杜绝“广播风暴” (Zero Broadcast Storm)
-- **纯事件驱动（无定时轮询广播）**：服务端内部**没有任何定时轮询发包器**。仅在服务首次启动以及检测到网卡 IP 实际切换时触发**单次** UDP 信标，日常待机广播包发送量恒为 **0**；
-- **微小数据包（单包 ~300 字节）**：单次通知耗时小于 0.1ms，仅相当于普通 ARP 请求包大小；
-- **单向无放大、无环路**：接收端设备仅接收并更新本地内存，绝不参与任何转发或中继，物理上完全不具备触发广播风暴或环路放大的条件。
+### 1. Zero Broadcast Storm Guarantee
+- **Event-Driven Only**: Contains **no background periodic broadcast loops**. UDP discovery beacons trigger **once** during startup and network change events. In idle state, broadcast packets per second is strictly **0**;
+- **Lightweight Payloads (~300 bytes)**: Each packet consumes less than 0.1ms of transmission time, comparable to a standard ARP probe;
+- **Non-Relaying Architecture**: Client devices only update their local routing tables and never retransmit or relay discovery packets.
 
-### 2. 链路本地（Link-Local）范围限制与企业 VLAN 隔离
-- **mDNS 组播局限于物理二层**：Bonjour / mDNS 组播协议（`224.0.0.251:5353`）严格限制 TTL=1，仅在当前 Wi-Fi/广播域生效。三层核心交换机与企业路由器默认绝不路由或转播该组播包，**绝不会跨网段扩散至公司其他部门或核心服务器**；
-- **兼容企业 AP 隔离 (Client Isolation)**：在开启了 AP 隔离的受控公司 Wi-Fi 下，无线 AP 会在空口或二层静默丢弃客户端间直连探测包。此时 UDP 信标与组播自然静默失效，不会对网络设施产生任何冲击或报警。
+### 2. Link-Local Scope & VLAN Isolation
+- **mDNS Bound to Layer 2**: Bonjour/mDNS multicast (`224.0.0.251:5353`) is strictly bounded by TTL=1. Enterprise core routers and Layer 3 switches will never forward packets beyond the local subnet or corporate boundaries;
+- **Enterprise AP Client Isolation**: In hardened office Wi-Fi networks with client isolation active, APs silently discard direct peer packets. Multicast safely degrades without generating alerts on network monitoring tools.
 
-### 3. 企业严格合规模式（一键彻底关闭 UDP）
-若公司信息安全或 EDR/态势感知审计策略严格禁止任何未经审批的 UDP 端口广播：
-- 点击页面右上角 **「设置」->「局域网发现与 IP 变动感知」**；
-- 直接**关闭「启用 UDP 局域网自发现」**开关，服务端将立即彻底销毁（`socket.close()`）UDP 8089 端口监听，不再发送或接收任何 UDP 数据包；
-- 关闭后依然可以通过 `.local` 稳定域名、手机扫码或 Bark / Webhook 远程推送完整使用快传与 IP 自愈功能。
+### 3. Enterprise Strict Compliance Mode
+For environments with strict security policies prohibiting UDP beacons:
+- Navigate to **"Settings" -> "LAN Discovery & IP Awareness"**;
+- Toggle off **"Enable UDP LAN Auto-Discovery"**. The server closes the socket immediately (`socket.close()`) on port 8089 and ceases all UDP activity;
+- The service remains 100% accessible via `.local` domain names, QR codes, or Bark / Webhook push notifications.
 
 ---
 
-## ❓ 常见问题 (FAQ)
+## ❓ Frequently Asked Questions (FAQ)
 
 <details>
-<summary><strong>Q: 手机扫码提示无法连接或超时？</strong></summary>
+<summary><strong>Q: Mobile device fails to connect after scanning the QR code?</strong></summary>
 
-1. 确认手机与电脑连接在**同一 Wi-Fi** 下（处于同一局域网网段）；
-2. 检查电脑系统防火墙是否已放行 `8080` 端口入站规则；
-3. 若电脑启用了 VPN 或虚拟机虚拟网卡，点击顶部 IP 下拉框切换至真实的局域网 IPv4 地址。
+1. Ensure your mobile device and computer are connected to the **same Wi-Fi network** (same subnet);
+2. Verify that your host firewall allows incoming traffic on port `8080`;
+3. If running VPNs or virtual machine network adapters, click the top IP dropdown to select the actual physical IPv4 address.
 </details>
 
 <details>
-<summary><strong>Q: Markdown 中包含复杂的 Mermaid 流程图或时序图能否正常展示？</strong></summary>
+<summary><strong>Q: Does it support complex Mermaid flowcharts or sequence diagrams in Markdown?</strong></summary>
 
-完全支持。LightDrop 内置专业级 Mermaid 渲染引擎与样式强隔离重置方案，无论是流程图（Flowchart）、时序图（Sequence）、类图（Class）、状态图（State）还是甘特图（Gantt）均能精确矢量渲染。支持图表/源码双视图切换、一键复制代码、导出 SVG 矢量图以及超大画布全屏大图预览。
+Yes, out of the box. LightDrop incorporates a dedicated Mermaid rendering engine with CSS isolation. Flowcharts, sequence diagrams, class models, state machines, and Gantt charts render cleanly as vector graphics. Features include dual diagram/code views, one-click code copy, SVG download, and fullscreen canvas inspection.
 </details>
 
 <details>
-<summary><strong>Q: 电脑切换 Wi-Fi 后，手机如何最快重新访问？</strong></summary>
+<summary><strong>Q: How can mobile devices reconnect fastest after the laptop changes Wi-Fi networks?</strong></summary>
 
-系统提供 3 种极速感知与自愈方案：
-1. **稳定域名（推荐）**：使用二维码弹窗中的 `http://<主机名>.local:8080` 稳定域名访问，手机直接「添加到主屏幕」或收藏为书签。电脑无论切换哪个 Wi-Fi，系统级 mDNS 均秒级自动将该域名解析至最新物理 IP，永久免换地址；
-2. **桌面原生通知**：电脑切换 Wi-Fi 时，macOS / Windows / Linux 屏幕右上角会自动弹出桌面通知，清晰展示最新 IP；
-3. **手机实时推送**：在设置中配置 iOS Bark URL，Wi-Fi 切换瞬间手机即刻收到通知弹窗，点击直接打开最新服务。
+LightDrop provides 3 self-healing mechanisms:
+1. **Stable Domain (Recommended)**: Connect via `http://<hostname>.local:8080` and add to Home Screen. Operating-system-level mDNS automatically resolves to the latest IP across network switches;
+2. **Native Desktop Notifications**: When Wi-Fi changes, a desktop notification banner displays the new connection URL;
+3. **Mobile Push Notifications**: Enter your iOS Bark Key in Settings to receive clickable notifications immediately upon network transitions.
 </details>
 
 <details>
-<summary><strong>Q: 该组件的 UDP 广播或组播会在公司局域网中引发广播风暴吗？</strong></summary>
+<summary><strong>Q: Will UDP broadcasts trigger enterprise IDS or broadcast alarms?</strong></summary>
 
-绝对不会。
-1. LightDrop 绝无定时广播循环，仅在 Wi-Fi 物理切换瞬间发送单个 300 字节的事件单包，频率比操作系统自带的 ARP/DHCP/AirDrop 后台网络行为低几个数量级；
-2. mDNS 组播 TTL=1，仅在二层链路生效，三层企业路由器默认不转发，无法扩散至其他部门；
-3. 若公司有严苛的内网合规审计，可在设置中一键彻底关闭「启用 UDP 局域网自发现」。
+No. LightDrop uses no recurring polling loops—only single 300-byte packets sent upon physical network changes. Furthermore, mDNS is restricted to Layer 2 (TTL=1), and UDP discovery can be disabled completely with one click in Settings.
 </details>
 
 <details>
-<summary><strong>Q: 上传超大文件是否有限制？</strong></summary>
+<summary><strong>Q: Is there a maximum file size limit for uploads?</strong></summary>
 
-原生无大小限制。系统采用流式写入机制，内存占用极低。如遇限额提示，可在右上角「设置」中将「单文件大小限制」调整为更大或设置为“无限制”。
+There is no inherent engine limit. The server utilizes streaming uploads with minimal memory footprints. If you encounter limits, adjust or disable the "Max File Size" slider in Settings.
 </details>
 
 <details>
-<summary><strong>Q: 更改存储路径到 NAS 挂载目录后，重启会丢失吗？</strong></summary>
+<summary><strong>Q: Will changing the storage path to a NAS mount persist across restarts?</strong></summary>
 
-不会。工作目录下的 `lightdrop.config.json` 会持久记录当前生效的物理路径，服务重启后自动从引导配置定位目标目录。
+Yes. The effective storage path is written to `lightdrop.config.json` and automatically loaded on server boot.
 </details>
 
 <details>
-<summary><strong>Q: 如何快捷分享带密码的文本并免去输入步骤？</strong></summary>
+<summary><strong>Q: How do I share password-protected text without requiring manual entry?</strong></summary>
 
-在记录的操作栏点击“复制链接”，弹窗内提供「快捷免密链接」（内含安全校验参数），接收者直接点击该链接即可自动验证并展开阅读。
+Click "Copy Link" in the record's actions menu and select "Quick Password-Free Link". The recipient simply opens the link to automatically authenticate and read the content.
 </details>
 
 <details>
-<summary><strong>Q: 为什么手机端看不到“操作审计”入口？</strong></summary>
+<summary><strong>Q: Why can't I see the "Audit Logs" entry from my smartphone?</strong></summary>
 
-安全设计机制。局域网操作审计包含所有客户端行为留痕，仅开放给运行服务的本机（Localhost / 127.0.0.1）管理员访问，防止数据外泄。
+By design. The audit log contains comprehensive client activity trails and is accessible only from the local host (`localhost` / `127.0.0.1`) or explicitly configured admin IPs.
 </details>
 
 ---
 
-## 🤝 参与贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 与 Pull Request！
+Contributions, issues, and feature requests are welcome!
 
-1. Fork 本项目并克隆到本地
-2. 创建特性分支 (`git checkout -b feature/awesome-feature`)
-3. 提交改动 (`git commit -m 'feat: add awesome feature'`)
-4. 推送到远程分支 (`git push origin feature/awesome-feature`)
-5. 发起 Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/awesome-feature`)
+3. Commit your changes (`git commit -m 'feat: add awesome feature'`)
+4. Push to the branch (`git push origin feature/awesome-feature`)
+5. Open a Pull Request
 
 ---
 
-## 📄 开源协议
+## 📄 License
 
-本项目采用 [MIT 许可证](LICENSE) 开源，允许免费商用与自由二次分发。
+This project is licensed under the [MIT License](LICENSE).
